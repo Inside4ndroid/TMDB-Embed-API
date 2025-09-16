@@ -47,4 +47,4 @@ This 1.0.0 release consolidates modernization work: provider cleanup, configurat
 
 ---
 
-[1.0.0]: https://github.com/Inside4ndroid/TMDB-Embed-API/releases/1.0.0
+[1.0.0]: https://github.com/Inside4ndroid/TMDB-Embed-API/releases/v1.0.0
