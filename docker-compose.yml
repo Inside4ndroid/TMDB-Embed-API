@@ -1,0 +1,27 @@
+version: '3.9'
+services:
+  tmdb-embed-api:
+    build: .
+    container_name: tmdb-embed-api
+    environment:
+      # Provide at least one TMDB key (comma separated or override via UI later)
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      # Alternative: supply JSON array
+      # - TMDB_API_KEYS=["key1","key2"]
+      - API_PORT=8787
+      # FebBox cookies (comma separated) if you want Showbox immediately functional
+      - FEBBOX_COOKIES=${FEBBOX_COOKIES:-}
+    ports:
+      - "8787:8787"
+    volumes:
+      # Persist runtime overrides (created by the admin UI)
+      - user_config_data:/app/utils/user-config.json
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8787/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+volumes:
+  user_config_data:

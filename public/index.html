@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>TMDB Embed Login</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<link rel="stylesheet" href="/style.css" />
+	<style>
+		body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#0f141a; font-family: system-ui, sans-serif; }
+		.login-card { background:#1e1e24; padding:2rem 2.25rem; border-radius:12px; width:100%; max-width:380px; box-shadow:0 4px 24px -4px rgba(0,0,0,.6); }
+		.login-card h1 { margin:0 0 1rem; font-size:1.3rem; color: white; text-align: center;}
+		.pw-change { display:none; background:#1e1e24; padding:2rem 2.25rem; border-radius:12px; width:100%; max-width:380px; box-shadow:0 4px 24px -4px rgba(0,0,0,.6); }
+		.pw-change h2 { margin:0 0 1rem; font-size:1.3rem; color: white; text-align: center;}
+		.field { display:flex; flex-direction:column; gap:.35rem; margin-bottom:.9rem; }
+		.field label { font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; color:#bbb; text-align: center;}
+		.field input { padding:.65rem .75rem !important; border:1px solid #333 !important; color:#bbb !important; border-radius:6px !important; background:#111 !important; font-size:.95rem !important; }
+		.actions { display:block; gap:.75rem; align-items:center; text-align: center;}
+		button.primary { background:#2563eb; color:#fff; padding:.65rem 1rem; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:.95rem; }
+		button.primary:disabled { opacity:.55; cursor:default; }
+		.status { min-height:1.1rem; font-size:.8rem; color:#eee; }
+		.error { color:#f87171; }
+		.success { color:#4ade80; }
+		.meta { margin-top:1.25rem; font-size:.7rem; line-height:1.2; color:#666; text-align:center; }
+		.link-btn { background:none; border:none; color:#60a5fa; cursor:pointer; font-size:.75rem; padding:0; }
+		.expiry-text { margin-top:.5rem; margin-bottom: .5rem; font-weight: 500; color: yellow;}
+	</style>
+	<script defer src="/login.js"></script>
+</head>
+<body>
+	<div class="login-card" id="loginCard">
+		<div id="lockoutBanner" style="display:none; background:#7f1d1d; color:#fca5a5; padding:.6rem .75rem; border-radius:8px; font-size:.8rem; line-height:1.2; margin-bottom:1rem;">
+			<strong>Too Many Attempts.</strong> Try again in <span id="lockoutCountdown">00:00</span>.
+		</div>
+		<h1>TMDB Embed Admin</h1>
+		<form id="loginForm" autocomplete="off">
+			<div class="field">
+				<label for="username">Username</label>
+				<input id="username" name="username" type="text" required autofocus />
+			</div>
+			<div class="field">
+				<label for="password">Password</label>
+				<input id="password" name="password" type="password" required />
+			</div>
+			<div class="actions">
+				<button id="loginBtn" class="primary" type="submit">Login</button>
+				<div class="status" id="status" aria-live="polite"></div>
+			</div>
+		</form>
+		<div class="pw-change" id="pwChange">
+			<h2>Change Password</h2>
+			<form id="pwForm" autocomplete="off">
+				<div class="field"><label for="oldPw">Old Password</label><input id="oldPw" type="password" required /></div>
+				<div class="field"><label for="newPw">New Password</label><input id="newPw" type="password" minlength="8" required /></div>
+				<div class="actions"><button id="pwBtn" class="primary" type="submit">Update</button><div class="status" id="pwStatus" aria-live="polite"></div></div>
+			</form>
+		</div>
+		<div class="meta">
+			<button id="togglePw" class="link-btn" type="button">Change Password</button>
+			<div class="expiry-text">Sessions expire after 12h or on server restart.</div>
+			<p class="login-hint">Default user created if none exists: admin / change-me (change it!).</p>
+		</div>
+	</div>
+</body>
+</html>
+

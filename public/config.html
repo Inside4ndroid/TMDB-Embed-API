@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8" />
+  <title>TMDB Embed Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+  <script defer src="/index.js"></script>
+</head>
+<body>
+  <button class="burger" aria-label="Toggle navigation">☰</button>
+  <div class="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+  <div class="brand">TMDB Embed API</div>
+  <nav class="nav">
+  <button class="nav-item" id="logoutBtn" data-action="logout">Logout</button>
+  <button class="nav-item" data-target="panel-status">Server Status</button>
+    <button class="nav-item" data-target="panel-core">Core</button>
+    <button class="nav-item" data-target="panel-quality">Quality / Filters</button>
+    <button class="nav-item" data-target="panel-keys">Keys</button>
+    <button class="nav-item" data-target="panel-febbox">FebBox / PStream</button>
+  <button class="nav-item" data-target="panel-advanced">Advanced</button>
+    <button class="nav-item" data-target="panel-live">Live Config</button>
+      <div class="grow"></div>
+    </nav>
+    <footer class="side-footer">
+      <a class="hint" style="margin-top: .5rem; color: var(--primary-fg);" href="https://github.com/Inside4ndroid" target="_blank">Github</a>
+      <a class="hint" style="margin-top: .5rem; color: var(--primary-fg);"  href="https://x.com/Inside_4ndroid" target="_blank">X (Twitter)</a>
+    </footer>
+  
+    <footer class="side-footer">Credits to :<a class="hint" style="margin-top: .5rem; color: var(--primary-fg);" href="https://github.com/tapframe/NuvioStreamsAddon" target="_blank">NuvioStreamsAddon for Stremio</a></footer>
+    <div class="bmc-widget-container">
+          <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="K3QSoR2" data-color="#5F7FFF" data-emoji="☕" data-font="Bree" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00" ></script>
+    </div>
+    <footer class="side-footer">Made with ❤️ by Inside4ndroid</footer>
+  </aside>
+  <main class="main">
+  <div id="bootWarn" class="alert warning" style="display:none;">No FEBBOX_COOKIES configured. Showbox / PStream streams may be unavailable.</div>
+  <div id="cacheDisabledBanner" class="alert info" style="display:none;">Cache is <strong>DISABLED</strong>; expect slower responses & higher source load.</div>
+  <div id="tmdbMissingBanner" class="alert warning" style="display:none;">No TMDB API Keys configured. Metadata-dependent providers (Showbox, 4khdhub, MoviesMod, MP4Hydra) may degrade.</div>
+    <form id="cfgForm" onsubmit="return false;" class="panels">
+      <section id="panel-status" class="panel">
+        <h1>Server Status<button style="margin-left: 1rem;" id="refreshStatusBtn" type="button">Refresh Status</button></h1>
+        <div class="status-grid">
+          <div class="status-block">
+            <h2>Metrics</h2>
+            <pre id="statusMetrics" class="status-pre">loading...</pre>
+          </div>
+          <div class="status-block">
+            <h2>Providers</h2>
+            <button style="margin-bottom: 1rem;" id="runProviderChecksBtn" type="button">Run Provider Functional Checks</button>
+            <span style="margin-left: .5rem; margin-bottom: 1rem;" id="providerCheckSummary" class="hint"></span>
+            <div id="statusProvidersEnhanced" class="providers-table" aria-live="polite"></div>
+          </div>
+          <div class="status-block wide">
+            <h2>Endpoints</h2>
+            <pre id="statusEndpoints" class="status-pre">loading...</pre>
+          </div>
+        </div>
+        
+      </section>
+      <section id="panel-core" class="panel">
+        <h1>Core Settings</h1>
+        <div class="field"><label>API Port<p class="hint">Provider enable/disable & feature flags apply immediately. Click toggles to enable (highlighted) or disable (dim).</p><input type="text" name="port" placeholder="8787" /></label></div>
+        <div class="field"><label>Default Region<p class="hint">This is best left set to auto/none.</p>
+          <select name="defaultRegion">
+            <option value="">(auto / none)</option>
+            <option value="USA7">US East</option>
+            <option value="USA6">US West</option>
+            <option value="USA5">US Middle</option>
+            <option value="UK3">United Kingdom</option>
+            <option value="CA1">Canada</option>
+            <option value="FR1">France</option>
+            <option value="DE2">Germany</option>
+            <option value="HK1">Hong Kong</option>
+            <option value="IN1">India</option>
+            <option value="AU1">Australia</option>
+            <option value="SZ">China</option>
+          </select>
+        </label></div>
+        <div class="field"><label>Providers (Enable + Default)<p class="hint">Click power icon to enable/disable, star to mark as default. If no defaults selected all enabled providers aggregate.</p>
+          <div id="providerMatrix" class="provider-matrix" aria-live="polite"></div>
+          <input type="hidden" name="defaultProviders" />
+        </label>
+        </div>
+      </section>
+      <section id="panel-quality" class="panel">
+        <h1>Quality & Filtering</h1>
+        <div class="field quality-group"><label>Minimum Quality<p class="hint">Preset radios serialize to a simple string. Custom & advanced modes use the JSON fields.</p>
+          <div class="quality-presets" id="qualityPresets">
+            <label class="q-item"><input type="radio" name="qualityPreset" value="all"> <span>All</span></label>
+            <label class="q-item"><input type="radio" name="qualityPreset" value="480p"> <span>480p+</span></label>
+            <label class="q-item"><input type="radio" name="qualityPreset" value="720p"> <span>720p+</span></label>
+            <label class="q-item"><input type="radio" name="qualityPreset" value="1080p"> <span>1080p+</span></label>
+            <label class="q-item"><input type="radio" name="qualityPreset" value="1440p"> <span>1440p+</span></label>
+            <label class="q-item"><input type="radio" name="qualityPreset" value="2160p"> <span>4K+</span></label>
+            <label class="q-item adv"><input type="radio" name="qualityPreset" value="custom"> <span>Custom JSON</span></label>
+          </div>
+        </label>
+        <textarea name="minQualitiesRaw" class="mini quality-json" placeholder='{"default":"900p"}' disabled></textarea>
+        </div>
+        <div class="field codec-group"><label>Exclude Codecs<p class="hint">Preset radios serialize to a simple string. Custom & advanced modes use the JSON fields.</p>
+          <div class="codec-presets" id="codecPresets">
+            <label class="c-item"><input type="radio" name="codecPreset" value="all"> <span>All</span></label>
+            <label class="c-item"><input type="radio" name="codecPreset" value="dv"> <span>Dolby Vision (DV)</span></label>
+            <label class="c-item"><input type="radio" name="codecPreset" value="hdr"> <span>HDR / HDR10(+)</span></label>
+            <label class="c-item adv"><input type="radio" name="codecPreset" value="advanced"> <span>Advanced JSON</span></label>
+          </div>
+        </label>
+        <textarea name="excludeCodecsRaw" class="mini json-adv" placeholder='{"excludeDV":true,"excludeHDR":false}' disabled></textarea>
+        </div>
+      </section>
+      <section id="panel-keys" class="panel">
+        <h1>API Keys</h1>
+        <div class="field"><label>TMDB API Keys<p class="hint">Add multiple TMDB API keys. They rotate randomly per request to spread usage.</p>
+          <div class="key-add-row">
+            <input id="tmdbKeyInput" type="text" placeholder="Enter TMDB key" autocomplete="off" />
+            <button id="addTmdbKeyBtn" type="button" class="small">Add Key</button>
+          </div>
+          <div id="tmdbKeyList" class="key-list" aria-live="polite"></div>
+          <input type="hidden" name="tmdbApiKeysHidden" />
+        </label></div>
+        
+      </section>
+      <section id="panel-febbox" class="panel">
+        <h1>FebBox / PStream</h1>
+        <p class="hint">ShowBox fetches content from a cloud storage provider called FebBox. Each FebBox user gets 100GB/month of fast streaming before speeds are reduced.</p>
+        <a class="hint" style="margin-bottom: 1rem;" href="https://febbox.com">Febbox Website</a>
+        <div class="field"><label>FebBox Cookies<p class="hint">Add multiple FebBox ui tokens. They will rotate / be evaluated. Removal updates overrides after saving.</p>
+          <div class="cookie-add-row">
+            <input id="febboxCookieInput" type="text" placeholder="Enter ui token (without ui=)" autocomplete="off" />
+            <button id="addFebboxCookieBtn" type="button" class="small">Add Cookie</button>
+          </div>
+          <div id="febboxCookieList" class="cookie-list" aria-live="polite"></div>
+          <input type="hidden" name="febboxCookiesHidden" />
+        </label></div>
+        <div class="field">
+  <label><strong>How to find your cookie</strong></label>
+</div>
+
+<ol class="hint">
+  <li>
+    <strong>Open Febbox.com</strong><br>
+    Go to https://febbox.com in your web browser.
+  </li>
+  <li>
+    <strong>Log in with Google</strong><br>
+    Use a Google account to log in to the Febbox site.<br>
+    <em>Tip:</em> For safety, it’s recommended to use a fresh account.
+  </li>
+  <li>
+    <strong>Open Developer Tools</strong><br>
+    Press the <kbd>F12</kbd> key on your keyboard.<br>
+    Alternatively, right-click anywhere on the page and select 
+    <code>Inspect</code> or <code>Inspect Element</code>.
+  </li>
+  <li>
+    <strong>Navigate to Cookies</strong><br>
+    In the Developer Tools panel, go to the <code>Application</code> tab.<br>
+    Expand the <code>Storage</code> section and click on <code>Cookies</code>.
+  </li>
+  <li>
+    <strong>Find the "ui" Cookie</strong><br>
+    In the list of cookies, look for the cookie with the name <code>ui</code>.
+  </li>
+  <li>
+    <strong>Copy the value</strong><br>
+    Copy the cookie value and paste it above then click add cookie.
+  </li>
+</ol>
+      </section>
+      <section id="panel-advanced" class="panel">
+        <h1>Advanced & Providers</h1>
+        <p class="hint">These settings allow you to customize the behavior of the api and will effect timings.</p>
+        <div class="field adv-flag-grid" id="advFlags" aria-label="Core Feature Flags">
+          <label class="adv-flag-item"><input type="checkbox" name="adv_disableCache" value="1" /> <span>Disable Cache</span></label>
+          <label class="adv-flag-item"><input type="checkbox" name="adv_showboxRotatingProxy" value="1" /> <span>Showbox Rotating Proxy</span></label>
+          <label class="adv-flag-item"><input type="checkbox" name="adv_disableUrlValidation" value="1" /> <span>Disable URL Validation</span></label>
+          <label class="adv-flag-item"><input type="checkbox" name="adv_disable4khdhubValidation" value="1" /> <span>Disable 4KHDHub Validation</span></label>
+        </div>
+        <h1>Proxy / Paths</h1>
+        <p class="hint">Provider enable/disable & feature flags apply immediately. Click toggles to enable (highlighted) or disable (dim).</p>
+        <div class="adv-group">
+          <div class="field small"><label>Showbox Cache Dir <input type="text" name="adv_showboxCacheDir" placeholder="/data/showbox-cache"/></label></div>
+          <div class="field small"><label>Showbox Proxy (Primary) <input type="text" name="adv_showboxProxyPrimary" placeholder="https://proxy.example/"/></label></div>
+          <div class="field small"><label>Showbox Proxy (Alternate) <input type="text" name="adv_showboxProxyAlternate" placeholder="https://proxy2.example/"/></label></div>
+          <div class="field small"><label>Xprime Proxy URL <input type="text" name="adv_xprimeProxyUrl" placeholder="https://..."/></label></div>
+          <div class="field small"><label>VidZee Proxy URL <input type="text" name="adv_vidzeeProxyUrl" placeholder="https://..."/></label></div>
+          <div class="field small"><label>VidSrc Proxy URL <input type="text" name="adv_vidsrcProxyUrl" placeholder="https://..."/></label></div>
+          <div class="field small"><label>MoviesMod Proxy URL <input type="text" name="adv_moviesmodProxyUrl" placeholder="https://..."/></label></div>
+        </div>
+      </section>
+      <section id="panel-live" class="panel">
+        <h1>Live Configuration</h1>
+        <h2>Merged</h2>
+        <p class="hint">This section shows the currently active configuration, including all merged settings from various sources.</p>
+        <pre id="currentCfg">loading...</pre>
+        <h2>Overrides (user-config.json)</h2>
+        <p class="hint">These are the user-defined settings from this panel that override the default configuration.</p>
+        <pre id="overrideCfg">(none)</pre>
+      </section>
+    </form>
+    <div class="actions-bar">
+      <button id="saveBtn" type="button" class="primary" disabled>Save Overrides</button>
+      <button id="reloadBtn" type="button">Reload</button>
+      <button id="clearBtn" type="button" class="danger">Clear All</button>
+      <span id="status" class="status"></span>
+      <span id="validationSummary" class="validation-summary"></span>
+    </div>
+  </main>
+</body></html>

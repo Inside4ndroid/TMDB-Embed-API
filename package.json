@@ -1,20 +1,41 @@
 {
   "name": "tmdb-embed-api",
   "version": "1.0.0",
-  "description": "An api to get embed sources using tmdbid.",
-  "license": "ISC",
-  "author": "Inside4ndroid Studios",
-  "type": "module",
-  "main": "index.js",
+  "description": "Standalone streaming embed source aggregation API (TMDB ID in, streams out)",
+  "main": "apiServer.js",
   "scripts": {
-    "start": "node --watch index.js"
+    "start": "node apiServer.js",
+    "start:api": "node --watch apiServer.js",
+    "dev:api": "nodemon --ignore providers/.cache --ignore **/tmdb-embed-showbox-cache apiServer.js",
+    "lint": "eslint . --ext .js"
   },
   "dependencies": {
+    "aromanize": "^0.1.5",
+    "axios": "^1.9.0",
+    "axios-cookiejar-support": "^6.0.2",
+    "body-parser": "^2.2.0",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.18.2",
-    "fetch": "^1.1.0",
-    "node-fetch": "^3.3.2"
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "form-data": "^4.0.3",
+  "hls-parser": "^0.13.5",
+    "jsdom": "^26.1.0",
+    "node-fetch": "^2.7.0",
+    "p-limit": "^6.2.0",
+    "puppeteer": "^24.11.0",
+    "string-similarity": "^4.0.4",
+    "tough-cookie": "^5.1.2",
+    "ttl-cache": "^1.0.2",
+    "vm2": "^3.9.19",
+    "yargs": "^17.7.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "eslint": "^8.57.0"
   }
 }
