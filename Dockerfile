@@ -22,6 +22,7 @@ ARG VERSION=dev
 WORKDIR /app
 ENV NODE_ENV=production \
     API_PORT=8787 \
+    BIND_HOST=0.0.0.0 \
     APP_VERSION=${VERSION}
 
 # Create non-root user

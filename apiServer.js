@@ -374,8 +374,12 @@ app.get('/api/streams/:provider/:type/:tmdbId', async (req,res) => {
 });
 
 const PORT = config.port;
-const server = app.listen(PORT, () => {
-  console.log(`TMDB Embed REST API listening on http://localhost:${PORT}`);
+const HOST = process.env.BIND_HOST || '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
+  console.log(`TMDB Embed REST API listening on http://${HOST}:${PORT}`);
+  if (HOST !== 'localhost') {
+    console.log(`Local access (if running on your machine): http://localhost:${PORT}`);
+  }
   console.log('Endpoints:');
   console.log('  GET  /api/health');
   console.log('  GET  /api/metrics');

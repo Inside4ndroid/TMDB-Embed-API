@@ -9,6 +9,7 @@ services:
       # Alternative: supply JSON array
       # - TMDB_API_KEYS=["key1","key2"]
       - API_PORT=8787
+  - BIND_HOST=0.0.0.0
       # FebBox cookies (comma separated) if you want Showbox immediately functional
       - FEBBOX_COOKIES=${FEBBOX_COOKIES:-}
     ports:
