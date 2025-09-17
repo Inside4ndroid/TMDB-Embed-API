@@ -1,6 +1,6 @@
 {
   "name": "tmdb-embed-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Standalone streaming embed source aggregation API (TMDB ID in, streams out)",
   "main": "apiServer.js",
   "scripts": {

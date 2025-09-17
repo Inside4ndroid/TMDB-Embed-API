@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2025-09-17
+
+### Fixed
+- Server now binds to `0.0.0.0` by default so Docker port publishing works correctly from the host. Added `BIND_HOST=0.0.0.0` in Dockerfile and compose.
+
+### Notes
+- If you were seeing `ERR_CONNECTION_REFUSED` on `http://localhost:8787`, pull the latest image or rebuild, then re-run with `-p 8787:8787`.
+
 ## [1.0.2] - 2025-09-17
 
 ### Fixed
@@ -37,6 +45,7 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] - 2025-09-16
 - Initial stable release.
 
+[1.0.3]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.0...v1.0.1
 
