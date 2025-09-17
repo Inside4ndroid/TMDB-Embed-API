@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2025-09-17
+
+### Fixed
+- Standardized Docker port to `8787` everywhere (Dockerfile `EXPOSE`, compose `ports`, healthchecks, and README examples). Previous release notes mentioned 8787 but some environments weren't reset; this release ensures consistency.
+
+### Documentation
+- Updated README version badge to 1.0.2 and verified Docker commands use `-p 8787:8787`.
+
 ## [1.0.1] - 2025-09-17
 
 ### Added
@@ -29,7 +37,8 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] - 2025-09-16
 - Initial stable release.
 
-[1.0.1]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.0...v1.0.1# Changelog
+[1.0.2]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.0...v1.0.1
 
 ## [1.0.0] - 2025-09-16
 
