@@ -1,5 +1,36 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+## [1.0.1] - 2025-09-17
+
+### Added
+- Admin UI: Restart Server button (below Logout) with a themed confirmation modal. The UI polls `/api/health` and auto-reloads when the server is back.
+- Sidebar divider under Logout/Restart for clarity.
+
+### Changed
+- Exclude Codecs presets:
+  - Introduced "None" (default) → `{ "excludeDV": false, "excludeHDR": false }`.
+  - "All" → `{ "excludeDV": true, "excludeHDR": true }`.
+  - Persist and render presets reliably after Save / Reload.
+- Minimum Quality: Clear All now resets to `"all"` and selects the All preset in the UI.
+- Clear All: Now fully resets TMDB keys, FebBox cookies, providers, and filters; added a themed confirmation modal with optional "Don't ask again" preference.
+- Live Config: Hide legacy `tmdbApiKey` (only show `tmdbApiKeys`).
+- Restart behavior:
+  - Local dev: Nodemon watches `restart.trigger`; backend writes it before a clean exit to force a restart.
+  - Docker: Compose uses `restart: unless-stopped`; Docker restarts the container after restart endpoint triggers exit.
+- Dockerfile: Ensure non-root `app` user owns `/app` for writing overrides and restart marker.
+- package.json scripts: Simplified to `start`, `start:dev`, and `lint`; both start scripts are nodemon-based and watch `restart.trigger`.
+
+### Fixed
+- Provider matrix re-renders immediately after Clear All (no page refresh needed).
+- Handling of Exclude Codecs "ALL" previously not persisting correctly.
+
+## [1.0.0] - 2025-09-16
+- Initial stable release.
+
+[1.0.1]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.0...v1.0.1# Changelog
+
 ## [1.0.0] - 2025-09-16
 
 ### Added

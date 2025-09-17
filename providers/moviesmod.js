@@ -25,13 +25,6 @@ function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-// --- Proxy Configuration ---
-const MOVIESMOD_PROXY_URL = process.env.MOVIESMOD_PROXY_URL;
-if (MOVIESMOD_PROXY_URL) {
-  console.log(`[MoviesMod] Proxy support enabled: ${MOVIESMOD_PROXY_URL}`);
-} else {
-  console.log('[MoviesMod] No proxy configured, using direct connections');
-}
 
 // --- Domain Fetching ---
 let moviesModDomain = 'https://moviesmod.chat'; // Fallback domain
@@ -92,22 +85,14 @@ const saveToCache = async (key, data) => {
 // Initialize cache directory on startup
 ensureCacheDir();
 
-// Proxy wrapper function
+// Request helper
 const makeRequest = async (url, options = {}) => {
-  if (MOVIESMOD_PROXY_URL) {
-    // Route through proxy
-    const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
-    console.log(`[MoviesMod] Making proxied request to: ${url}`);
-    return axios.get(proxiedUrl, options);
-  } else {
-    // Direct request
     console.log(`[MoviesMod] Making direct request to: ${url}`);
     return axios.get(url, options);
-  }
 };
 
-// Helper function to create a proxied session for SID resolution
-const createProxiedSession = async (jar) => {
+// Helper function to create a session for SID resolution
+const createSession = async (jar) => {
   const { wrapper } = await getAxiosCookieJarSupport();
   
   const sessionConfig = {
@@ -134,46 +119,6 @@ const createProxiedSession = async (jar) => {
     }
   };
 
-  // If proxy is enabled, wrap the session methods to use proxy
-  if (MOVIESMOD_PROXY_URL) {
-    console.log(`[MoviesMod] Creating SID session with proxy: ${MOVIESMOD_PROXY_URL}`);
-    const originalGet = session.get.bind(session);
-    const originalPost = session.post.bind(session);
-
-    session.get = async (url, options = {}) => {
-      const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[MoviesMod] Making proxied SID GET request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(url);
-      if (cookieString) {
-        console.log(`[MoviesMod] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalGet(proxiedUrl, options);
-    };
-
-    session.post = async (url, data, options = {}) => {
-      const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[MoviesMod] Making proxied SID POST request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(url);
-      if (cookieString) {
-        console.log(`[MoviesMod] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalPost(proxiedUrl, data, options);
-    };
-  }
 
   return session;
 };
@@ -430,8 +375,8 @@ async function resolveTechUnblockedLink(sidUrl) {
     const { origin } = new URL(sidUrl);
     const jar = new CookieJar();
 
-    // Create session with proxy support
-    const session = await createProxiedSession(jar);
+    // Create session
+    const session = await createSession(jar);
 
     try {
         // Step 0: Get the _wp_http value
@@ -679,24 +624,12 @@ async function resolveVideoSeedLink(videoSeedUrl) {
             const formData = new FormData();
             formData.append('keys', keys);
 
-            let apiResponse;
-            if (MOVIESMOD_PROXY_URL) {
-                const proxiedApiUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(apiUrl)}`;
-                console.log(`[MoviesMod] Making proxied POST request to VideoSeed API`);
-                apiResponse = await axios.post(proxiedApiUrl, formData, {
-                    headers: {
-                        ...formData.getHeaders(),
-                        'x-token': new URL(videoSeedUrl).hostname
-                    }
-                });
-            } else {
-                apiResponse = await axios.post(apiUrl, formData, {
-                    headers: {
-                        ...formData.getHeaders(),
-                        'x-token': new URL(videoSeedUrl).hostname
-                    }
-                });
-            }
+            const apiResponse = await axios.post(apiUrl, formData, {
+                headers: {
+                    ...formData.getHeaders(),
+                    'x-token': new URL(videoSeedUrl).hostname
+                }
+            });
 
             if (apiResponse.data && apiResponse.data.url) {
                 return apiResponse.data.url;
@@ -724,27 +657,13 @@ async function validateVideoUrl(url, timeout = 10000) {
     try {
         console.log(`[MoviesMod] Validating URL: ${url.substring(0, 100)}...`);
         
-        // Use proxy for URL validation if enabled
-        let response;
-        if (MOVIESMOD_PROXY_URL) {
-            const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
-            console.log(`[MoviesMod] Making proxied HEAD request for validation to: ${url}`);
-            response = await axios.head(proxiedUrl, {
-                timeout,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Range': 'bytes=0-1' // Just request first byte to test
-                }
-            });
-        } else {
-            response = await axios.head(url, {
-                timeout,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Range': 'bytes=0-1' // Just request first byte to test
-                }
-            });
-        }
+        const response = await axios.head(url, {
+            timeout,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Range': 'bytes=0-1' // Just request first byte to test
+            }
+        });
 
         // Check if status is OK (200-299) or partial content (206)
         if (response.status >= 200 && response.status < 400) {

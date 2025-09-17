@@ -124,13 +124,14 @@ function fillForm(data){
 	}
 	const excRaw = override.excludeCodecsRaw !== undefined ? override.excludeCodecsRaw : (merged.excludeCodecsRaw || '');
 	let parsed = null; try { if(excRaw && /[\{\[]/.test(excRaw)) parsed = JSON.parse(excRaw); } catch {}
-	let mode = 'all';
+	let mode = 'none';
 	if(parsed){
 		const dv = parsed.excludeDV === true;
 		const hdr = parsed.excludeHDR === true;
-		if(dv && !hdr) mode = 'dv';
+		if(!dv && !hdr) mode = 'none';
+		else if(dv && hdr) mode = 'all';
+		else if(dv && !hdr) mode = 'dv';
 		else if(hdr && !dv) mode = 'hdr';
-		else if(dv && hdr) mode = 'advanced';
 		else mode = 'advanced';
 	} else if(excRaw){
 		if(/excludeDV":true/.test(excRaw) && !/excludeHDR":true/.test(excRaw)) mode='dv';
@@ -167,25 +168,17 @@ function fillForm(data){
 		['enableVixsrcProvider','adv_enableVixsrc'],
 		['disableCache','adv_disableCache'],
 		['enablePStreamApi','adv_enablePStream'],
-		['showboxUseRotatingProxy','adv_showboxRotatingProxy'],
 		['disableUrlValidation','adv_disableUrlValidation'],
 		['disable4khdhubUrlValidation','adv_disable4khdhubValidation']
 	];
 	advBools.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const src = (override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]); if(el.type==='checkbox'){ el.checked = !!src; } else { el.value = src? 'true':''; } });
 	const advTexts = [
-		['showboxCacheDir','adv_showboxCacheDir'],
-		['showboxProxyPrimary','adv_showboxProxyPrimary'],
-		['showboxProxyAlternate','adv_showboxProxyAlternate'],
-		['xprimeProxyUrl','adv_xprimeProxyUrl'],
-		['vidzeeProxyUrl','adv_vidzeeProxyUrl'],
-		['vidsrcProxyUrl','adv_vidsrcProxyUrl'],
-		['moviesmodProxyUrl','adv_moviesmodProxyUrl']
+	['showboxCacheDir','adv_showboxCacheDir']
 	];
 	advTexts.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const val = override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]; el.value = val || ''; });
 	// Sync checkbox style advanced flags
 	const advFlagMap = {
 		adv_disableCache: 'disableCache',
-		adv_showboxRotatingProxy: 'showboxUseRotatingProxy',
 		adv_disableUrlValidation: 'disableUrlValidation',
 		adv_disable4khdhubValidation: 'disable4khdhubUrlValidation'
 	};
@@ -234,7 +227,8 @@ async function save(){
 	}
 	const cPreset = document.querySelector('input[name="codecPreset"]:checked');
 	if(cPreset){
-		if(cPreset.value==='all') payload.excludeCodecsRaw = null;
+		if(cPreset.value==='none') payload.excludeCodecsRaw = JSON.stringify({excludeDV:false,excludeHDR:false});
+		else if(cPreset.value==='all') payload.excludeCodecsRaw = JSON.stringify({excludeDV:true,excludeHDR:true});
 		else if(cPreset.value==='dv') payload.excludeCodecsRaw = JSON.stringify({excludeDV:true,excludeHDR:false});
 		else if(cPreset.value==='hdr') payload.excludeCodecsRaw = JSON.stringify({excludeDV:false,excludeHDR:true});
 		else if(cPreset.value==='advanced') {
@@ -258,20 +252,11 @@ async function save(){
 		adv_enableVixsrc:'enableVixsrcProvider',
 		adv_disableCache:'disableCache',
 		adv_enablePStream:'enablePStreamApi',
-		adv_showboxRotatingProxy:'showboxUseRotatingProxy',
 		adv_disableUrlValidation:'disableUrlValidation',
 		adv_disable4khdhubValidation:'disable4khdhubUrlValidation'
 	};
 	Object.entries(boolMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(el) payload[cfgKey] = !!el.checked; });
-	const textMap = {
-		adv_showboxCacheDir:'showboxCacheDir',
-		adv_showboxProxyPrimary:'showboxProxyPrimary',
-		adv_showboxProxyAlternate:'showboxProxyAlternate',
-		adv_xprimeProxyUrl:'xprimeProxyUrl',
-		adv_vidzeeProxyUrl:'vidzeeProxyUrl',
-		adv_vidsrcProxyUrl:'vidsrcProxyUrl',
-		adv_moviesmodProxyUrl:'moviesmodProxyUrl'
-	};
+	const textMap = { adv_showboxCacheDir:'showboxCacheDir' };
 	Object.entries(textMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(!el) return; const v = el.value.trim(); payload[cfgKey] = v? v : null; });
 	const tmdbHidden = f.elements['tmdbApiKeysHidden'];
 	if (tmdbHidden){
@@ -288,18 +273,92 @@ async function save(){
 	} catch(e){ setStatus(e.message,true); }
 }
 
+function openConfirmReset(){
+	const modal = document.getElementById('confirmReset');
+	if(!modal) return Promise.resolve(false);
+	// Respect persisted preference
+	try {
+		const skip = localStorage.getItem('ns_confirmReset_skip') === '1';
+		if (skip) return Promise.resolve(true);
+	} catch {}
+	modal.classList.add('show');
+	return new Promise(resolve => {
+		const onClick = (e)=>{
+			const action = e.target?.dataset?.action;
+			if(action==='confirm'){
+				try {
+					const dontAsk = modal.querySelector('#confirmResetDontAsk')?.checked;
+					if (dontAsk) localStorage.setItem('ns_confirmReset_skip','1');
+				} catch {}
+				cleanup(); resolve(true);
+			}
+			if(action==='cancel' || e.target===modal.querySelector('.modal-backdrop')){ cleanup(); resolve(false); }
+		};
+		function onKey(e){ if(e.key==='Escape'){ cleanup(); resolve(false); } }
+		function cleanup(){ modal.classList.remove('show'); modal.removeEventListener('click', onClick); document.removeEventListener('keydown', onKey); }
+		modal.addEventListener('click', onClick);
+		document.addEventListener('keydown', onKey);
+	});
+}
+
+function openConfirmRestart(){
+	const modal = document.getElementById('confirmRestart');
+	if(!modal) return Promise.resolve(false);
+	modal.classList.add('show');
+	return new Promise(resolve => {
+		const onClick = (e)=>{
+			const action = e.target?.dataset?.action;
+			if(action==='confirm'){ cleanup(); resolve(true); }
+			if(action==='cancel' || e.target===modal.querySelector('.modal-backdrop')){ cleanup(); resolve(false); }
+		};
+		function onKey(e){ if(e.key==='Escape'){ cleanup(); resolve(false); } }
+		function cleanup(){ modal.classList.remove('show'); modal.removeEventListener('click', onClick); document.removeEventListener('keydown', onKey); }
+		modal.addEventListener('click', onClick);
+		document.addEventListener('keydown', onKey);
+	});
+}
+
 async function clearAll(){
-	if(!confirm('Remove ALL overrides?')) return;
-	const payload = { port:null, defaultRegion:null, defaultProviders:[], minQualitiesRaw:null, excludeCodecsRaw:null, febboxCookies:null,
-		enableXprimeProvider:null, enable4khdhubProvider:null, enableMoviesmodProvider:null, enableMp4hydraProvider:null, enableVidzeeProvider:null, enableVixsrcProvider:null,
-		disableCache:null, enablePStreamApi:null, showboxUseRotatingProxy:null, disableUrlValidation:null, disable4khdhubUrlValidation:null,
-		showboxCacheDir:null, showboxProxyPrimary:null, showboxProxyAlternate:null, xprimeProxyUrl:null, vidzeeProxyUrl:null, vidsrcProxyUrl:null, moviesmodProxyUrl:null };
+	const confirmed = await openConfirmReset();
+	if(!confirmed) return;
+	// To truly reset to app defaults, we must:
+	// - Explicitly clear arrays so env fallbacks don't persist
+	// - Set boolean flags to their default values (rather than null)
+	// - Null legacy single TMDB key
+	const payload = {
+		port: null,
+		defaultRegion: null,
+		defaultProviders: [],
+		minQualitiesRaw: 'all',
+		excludeCodecsRaw: JSON.stringify({excludeDV:false,excludeHDR:false}),
+		// Explicit empty arrays ensure override wins over any prior env mirror
+		febboxCookies: [],
+		tmdbApiKeys: [],
+		tmdbApiKey: null,
+		// Provider enable flags default to true
+		enableShowboxProvider: true,
+		enableXprimeProvider: true,
+		enable4khdhubProvider: true,
+		enableMoviesmodProvider: true,
+		enableMp4hydraProvider: true,
+		enableVidzeeProvider: true,
+		enableVixsrcProvider: true,
+		// Other defaults
+		disableCache: false,
+		enablePStreamApi: true,
+		disableUrlValidation: false,
+		disable4khdhubUrlValidation: false,
+		showboxCacheDir: null
+	};
 	try {
 		const r = await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 		const js = await r.json();
 		if(!js.success) throw new Error(js.error||'Clear failed');
-		setStatus('Overrides cleared');
+		setStatus('All settings reset to defaults');
 		fillForm(js);
+		// Re-render provider matrix immediately so toggles reflect defaults without page refresh
+		try { renderProviderMatrix(js.merged); } catch {}
+		validate();
 	} catch(e){ setStatus(e.message,true); }
 }
 
@@ -441,6 +500,30 @@ document.addEventListener('DOMContentLoaded', ()=> {
 			try { await fetch('/auth/logout',{method:'POST'}); } catch {}
 			// Use replace to avoid creating extra history entry
 			location.replace('/?loggedOut=1');
+		});
+	}
+	const restartBtn = document.getElementById('restartBtn');
+	if(restartBtn){
+		restartBtn.addEventListener('click', async ()=>{
+			const ok = await openConfirmRestart();
+			if(!ok) return;
+			setStatus('Restarting server…');
+			try {
+				const r = await fetch('/api/restart',{ method:'POST' });
+				if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error(t||('HTTP '+r.status)); }
+				// Server will shut down soon; start polling until it comes back
+				await new Promise(resolve => setTimeout(resolve, 1000));
+				const start = Date.now();
+				const timeoutMs = 60_000;
+				(async function poll(){
+					try {
+						const pr = await fetch('/api/health',{ cache:'no-store' });
+						if(pr.ok){ location.reload(); return; }
+					} catch {}
+					if(Date.now()-start > timeoutMs){ setStatus('Restart timed out', true); return; }
+					setTimeout(poll, 1000);
+				})();
+			} catch(e){ setStatus('Restart failed: '+e.message, true); }
 		});
 	}
 	reload();

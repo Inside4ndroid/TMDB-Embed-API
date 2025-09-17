@@ -35,16 +35,11 @@ const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
 
         let finalApiUrl;
         const headers = {
-            'Referer': `https://player.vidzee.wtf/embed/movie/${tmdbId}` // Default for proxy method
+            'Referer': `https://player.vidzee.wtf/embed/movie/${tmdbId}`
         };
         const timeout = 7000; // Reduced timeout
 
-        const proxyBaseUrl = process.env.VIDZEE_PROXY_URL || process.env.SHOWBOX_PROXY_URL_VALUE;
-        if (proxyBaseUrl) {
-            finalApiUrl = proxyBaseUrl + encodeURIComponent(targetApiUrl);
-        } else {
-            finalApiUrl = targetApiUrl;
-        }
+        finalApiUrl = targetApiUrl;
 
         console.log(`[VidZee] Fetching from server ${sr}: ${targetApiUrl}`);
 

@@ -1,6 +1,26 @@
 {
   "defaultProviders": [],
   "configVersion": 1,
-  "tmdbApiKeys": [],
-  "enableShowboxProvider": true
+  "tmdbApiKeys": [
+    "qwfghfgh",
+    "fghsdfs",
+    "uygghmng"
+  ],
+  "enableShowboxProvider": true,
+  "febboxCookies": [
+    "gfdgfdgf"
+  ],
+  "enableXprimeProvider": true,
+  "enable4khdhubProvider": true,
+  "enableMoviesmodProvider": true,
+  "enableMp4hydraProvider": true,
+  "enableVidzeeProvider": true,
+  "enableVixsrcProvider": true,
+  "disableCache": false,
+  "enablePStreamApi": true,
+  "disableUrlValidation": false,
+  "disable4khdhubUrlValidation": false,
+  "excludeCodecsRaw": "{\"excludeDV\":true,\"excludeHDR\":true}",
+  "minQualitiesRaw": "1080p",
+  "port": 3000
 }

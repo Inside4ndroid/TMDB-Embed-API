@@ -12,6 +12,8 @@
   <div class="brand">TMDB Embed API</div>
   <nav class="nav">
   <button class="nav-item" id="logoutBtn" data-action="logout">Logout</button>
+  <button class="nav-item" id="restartBtn" type="button">Restart Server</button>
+  <div class="nav-sep" role="separator" aria-hidden="true"></div>
   <button class="nav-item" data-target="panel-status">Server Status</button>
     <button class="nav-item" data-target="panel-core">Core</button>
     <button class="nav-item" data-target="panel-quality">Quality / Filters</button>
@@ -97,8 +99,9 @@
         </label>
         <textarea name="minQualitiesRaw" class="mini quality-json" placeholder='{"default":"900p"}' disabled></textarea>
         </div>
-        <div class="field codec-group"><label>Exclude Codecs<p class="hint">Preset radios serialize to a simple string. Custom & advanced modes use the JSON fields.</p>
+        <div class="field codec-group"><label>Exclude Codecs<p class="hint">Preset radios serialize to JSON. Advanced lets you edit the JSON directly.</p>
           <div class="codec-presets" id="codecPresets">
+            <label class="c-item"><input type="radio" name="codecPreset" value="none"> <span>None</span></label>
             <label class="c-item"><input type="radio" name="codecPreset" value="all"> <span>All</span></label>
             <label class="c-item"><input type="radio" name="codecPreset" value="dv"> <span>Dolby Vision (DV)</span></label>
             <label class="c-item"><input type="radio" name="codecPreset" value="hdr"> <span>HDR / HDR10(+)</span></label>
@@ -172,20 +175,13 @@
         <p class="hint">These settings allow you to customize the behavior of the api and will effect timings.</p>
         <div class="field adv-flag-grid" id="advFlags" aria-label="Core Feature Flags">
           <label class="adv-flag-item"><input type="checkbox" name="adv_disableCache" value="1" /> <span>Disable Cache</span></label>
-          <label class="adv-flag-item"><input type="checkbox" name="adv_showboxRotatingProxy" value="1" /> <span>Showbox Rotating Proxy</span></label>
           <label class="adv-flag-item"><input type="checkbox" name="adv_disableUrlValidation" value="1" /> <span>Disable URL Validation</span></label>
           <label class="adv-flag-item"><input type="checkbox" name="adv_disable4khdhubValidation" value="1" /> <span>Disable 4KHDHub Validation</span></label>
         </div>
-        <h1>Proxy / Paths</h1>
+        <h1>Paths</h1>
         <p class="hint">Provider enable/disable & feature flags apply immediately. Click toggles to enable (highlighted) or disable (dim).</p>
         <div class="adv-group">
           <div class="field small"><label>Showbox Cache Dir <input type="text" name="adv_showboxCacheDir" placeholder="/data/showbox-cache"/></label></div>
-          <div class="field small"><label>Showbox Proxy (Primary) <input type="text" name="adv_showboxProxyPrimary" placeholder="https://proxy.example/"/></label></div>
-          <div class="field small"><label>Showbox Proxy (Alternate) <input type="text" name="adv_showboxProxyAlternate" placeholder="https://proxy2.example/"/></label></div>
-          <div class="field small"><label>Xprime Proxy URL <input type="text" name="adv_xprimeProxyUrl" placeholder="https://..."/></label></div>
-          <div class="field small"><label>VidZee Proxy URL <input type="text" name="adv_vidzeeProxyUrl" placeholder="https://..."/></label></div>
-          <div class="field small"><label>VidSrc Proxy URL <input type="text" name="adv_vidsrcProxyUrl" placeholder="https://..."/></label></div>
-          <div class="field small"><label>MoviesMod Proxy URL <input type="text" name="adv_moviesmodProxyUrl" placeholder="https://..."/></label></div>
         </div>
       </section>
       <section id="panel-live" class="panel">
@@ -206,4 +202,39 @@
       <span id="validationSummary" class="validation-summary"></span>
     </div>
   </main>
+  <!-- Confirmation Modal -->
+  <div id="confirmReset" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirmResetTitle">
+    <div class="modal-backdrop"></div>
+    <div class="modal-window">
+      <h3 id="confirmResetTitle">Reset All Settings?</h3>
+      <p class="modal-text">This will remove all overrides, delete all TMDB API keys and FebBox cookies, and restore provider and feature flags to their defaults. This action cannot be undone.</p>
+      <ul class="modal-list">
+        <li>Clear TMDB keys and FebBox cookies</li>
+        <li>Reset provider enable/default selections</li>
+        <li>Reapply default quality and validation settings</li>
+      </ul>
+      <label class="modal-opt"><input type="checkbox" id="confirmResetDontAsk" /> Don't ask again on this device</label>
+      <div class="modal-actions">
+        <button type="button" class="danger" data-action="confirm">Reset Everything</button>
+        <button type="button" data-action="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- Restart Confirmation Modal -->
+  <div id="confirmRestart" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirmRestartTitle">
+    <div class="modal-backdrop"></div>
+    <div class="modal-window">
+      <h3 id="confirmRestartTitle">Restart Server?</h3>
+      <p class="modal-text">This will stop the server process and attempt to restart it. Active requests will be interrupted. Make sure the app is managed by Docker, PM2, systemd, or another supervisor.</p>
+      <ul class="modal-list">
+        <li>Interrupts any in-flight API calls</li>
+        <li>Server will exit and come back up</li>
+        <li>UI will auto-reload when available</li>
+      </ul>
+      <div class="modal-actions">
+        <button type="button" class="danger" data-action="confirm">Restart Now</button>
+        <button type="button" data-action="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 </body></html>

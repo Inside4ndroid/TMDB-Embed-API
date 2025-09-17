@@ -15,13 +15,7 @@ const getAxiosCookieJarSupport = async () => {
   return axiosCookieJarSupport;
 };
 
-// --- Proxy Configuration ---
-const UHDMOVIES_PROXY_URL = process.env.UHDMOVIES_PROXY_URL;
-if (UHDMOVIES_PROXY_URL) {
-  console.log(`[UHDMovies] Proxy support enabled: ${UHDMOVIES_PROXY_URL}`);
-} else {
-  console.log('[UHDMovies] No proxy configured, using direct connections');
-}
+// All requests are direct
 
 // --- Domain Fetching ---
 let uhdMoviesDomain = 'https://uhdmovies.email'; // Fallback domain
@@ -91,7 +85,6 @@ const saveToCache = async (key, data) => {
 ensureCacheDir();
 
 // Configure axios with headers to mimic a browser
-// Configure axios instance with optional proxy support
 const createAxiosInstance = () => {
   const config = {
     headers: {
@@ -105,32 +98,15 @@ const createAxiosInstance = () => {
     timeout: 30000
   };
 
-  // Add proxy configuration if UHDMOVIES_PROXY_URL is set
-  if (UHDMOVIES_PROXY_URL) {
-    console.log(`[UHDMovies] Using proxy: ${UHDMOVIES_PROXY_URL}`);
-    // For proxy URLs that expect the destination URL as a parameter
-    config.transformRequest = [(data, headers) => {
-      return data;
-    }];
-  }
-
   return axios.create(config);
 };
 
 const axiosInstance = createAxiosInstance();
 
-// Proxy wrapper function
+// Request helper
 const makeRequest = async (url, options = {}) => {
-  if (UHDMOVIES_PROXY_URL) {
-    // Route through proxy
-    const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
-    console.log(`[UHDMovies] Making proxied request to: ${url}`);
-    return axiosInstance.get(proxiedUrl, options);
-  } else {
-    // Direct request
-    console.log(`[UHDMovies] Making direct request to: ${url}`);
-    return axiosInstance.get(url, options);
-  }
+  console.log(`[UHDMovies] Making direct request to: ${url}`);
+  return axiosInstance.get(url, options);
 };
 
 // Removed unused in-memory cache structure (uhdMoviesCache)
@@ -738,24 +714,12 @@ async function tryInstantDownload($) {
       const formData = new FormData();
       formData.append('keys', keys);
 
-      let apiResponse;
-      if (UHDMOVIES_PROXY_URL) {
-        const proxiedApiUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(apiUrl)}`;
-        console.log(`[UHDMovies] Making proxied POST request for Instant Download API to: ${apiUrl}`);
-        apiResponse = await axiosInstance.post(proxiedApiUrl, formData, {
-          headers: {
-            ...formData.getHeaders(),
-            'x-token': new URL(instantDownloadLink).hostname
-          }
-        });
-      } else {
-        apiResponse = await axiosInstance.post(apiUrl, formData, {
-          headers: {
-            ...formData.getHeaders(),
-            'x-token': new URL(instantDownloadLink).hostname
-          }
-        });
-      }
+      const apiResponse = await axiosInstance.post(apiUrl, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          'x-token': new URL(instantDownloadLink).hostname
+        }
+      });
 
       if (apiResponse.data && apiResponse.data.url) {
         let finalUrl = apiResponse.data.url;
@@ -859,25 +823,12 @@ async function validateVideoUrl(url, timeout = 10000) {
   try {
     console.log(`[UHDMovies] Validating URL: ${url.substring(0, 100)}...`);
     
-    // Use proxy for URL validation if enabled
-    let response;
-    if (UHDMOVIES_PROXY_URL) {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[UHDMovies] Making proxied HEAD request for validation to: ${url}`);
-      response = await axiosInstance.head(proxiedUrl, {
-        timeout,
-        headers: {
-          'Range': 'bytes=0-1' // Just request first byte to test
-        }
-      });
-    } else {
-      response = await axiosInstance.head(url, {
-        timeout,
-        headers: {
-          'Range': 'bytes=0-1' // Just request first byte to test
-        }
-      });
-    }
+    const response = await axiosInstance.head(url, {
+      timeout,
+      headers: {
+        'Range': 'bytes=0-1'
+      }
+    });
 
     // Check if status is OK (200-299) or partial content (206)
     if (response.status >= 200 && response.status < 400) {
@@ -1076,8 +1027,8 @@ const getCookiesForUrl = async (jar, url) => {
   return null;
 };
 
-// Helper function to create a proxied session for SID resolution
-const createProxiedSession = async (jar) => {
+// Helper function to create a session for SID resolution
+const createSession = async (jar) => {
   const { wrapper } = await getAxiosCookieJarSupport();
   
   const sessionConfig = {
@@ -1093,46 +1044,7 @@ const createProxiedSession = async (jar) => {
 
   const session = wrapper(axios.create(sessionConfig));
 
-  // If proxy is enabled, wrap the session methods to use proxy
-  if (UHDMOVIES_PROXY_URL) {
-    console.log(`[UHDMovies] Creating SID session with proxy: ${UHDMOVIES_PROXY_URL}`);
-    const originalGet = session.get.bind(session);
-    const originalPost = session.post.bind(session);
-
-    session.get = async (url, options = {}) => {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[UHDMovies] Making proxied SID GET request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(jar, url);
-      if (cookieString) {
-        console.log(`[UHDMovies] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalGet(proxiedUrl, options);
-    };
-
-    session.post = async (url, data, options = {}) => {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[UHDMovies] Making proxied SID POST request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(jar, url);
-      if (cookieString) {
-        console.log(`[UHDMovies] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalPost(proxiedUrl, data, options);
-    };
-  }
+  
 
   return session;
 };
@@ -1143,8 +1055,8 @@ async function resolveSidToDriveleech(sidUrl) {
   const { origin } = new URL(sidUrl);
   const jar = new CookieJar();
 
-  // Create session with proxy support
-  const session = await createProxiedSession(jar);
+  // Create session
+  const session = await createSession(jar);
 
   try {
     // Step 0: Get the _wp_http value

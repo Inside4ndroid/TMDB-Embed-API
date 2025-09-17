@@ -1,12 +1,11 @@
 {
   "name": "tmdb-embed-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standalone streaming embed source aggregation API (TMDB ID in, streams out)",
   "main": "apiServer.js",
   "scripts": {
-    "start": "node apiServer.js",
-    "start:api": "node --watch apiServer.js",
-    "dev:api": "nodemon --ignore providers/.cache --ignore **/tmdb-embed-showbox-cache apiServer.js",
+    "start": "nodemon --watch restart.trigger apiServer.js",
+    "start:dev": "nodemon --watch restart.trigger --ignore providers/.cache --ignore **/tmdb-embed-showbox-cache apiServer.js",
     "lint": "eslint . --ext .js"
   },
   "dependencies": {

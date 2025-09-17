@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=flat" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Version-1.0.0-informational?style=flat" />
+  <img src="https://img.shields.io/badge/Version-1.0.1-informational?style=flat" />
   <img src="https://img.shields.io/docker/pulls/inside4ndroid/tmdb-embed-api?label=Docker%20Pulls&style=flat" />
 </p>
 
@@ -53,11 +53,11 @@ npm install
 # 2. (Optional) Copy example env if you want an initial TMDB key
 cp .env.example .env   # then edit TMDB_API_KEY=
 
-# 3. Start API (production style)
-node apiServer.js
+# 3. Start API with automatic restarts (recommended for local dev)
+npm start
 
-# Or with automatic restarts (if you add a dev script)
-# npm run dev:api
+# Or production-style single run
+# node apiServer.js
 
 # 4. Open the Admin UI (login page) in browser
 http://localhost:8787/
@@ -142,6 +142,11 @@ If both `TMDB_API_KEY` and `TMDB_API_KEYS` are provided, rotation uses the array
 ```bash
 docker compose pull   # if using an external registry (future)
 docker compose up -d --build
+
+### Restart from Admin UI
+The Admin panel includes a Restart Server control.
+- Local (nodemon): the backend writes a `restart.trigger` file and exits; nodemon detects the change and restarts automatically.
+- Docker Compose: the container exits and is restarted by `restart: unless-stopped`.
 ```
 
 ### Healthcheck
@@ -188,7 +193,7 @@ Saving in the UI writes only changed keys. Setting a field to empty removes the 
 | Quality / Filters | Min quality presets & codec exclusion JSON |
 | Keys | Add/remove TMDB API keys (rotated randomly) |
 | FebBox / PStream | Manage FebBox cookies powering Showbox provider |
-| Advanced | Provider toggles, cache & validation flags, proxy paths |
+| Advanced | Provider toggles, cache & validation flags |
 | Server Status | Live metrics, provider functional checks |
 | Live Config | View merged + override JSON snapshots |
 

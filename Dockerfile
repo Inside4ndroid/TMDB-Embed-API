@@ -39,6 +39,8 @@ COPY --from=build /app/README.md ./
 # Expose port (documentational; runtime can override)
 EXPOSE 8787
 
+# Ensure runtime user owns app directory for writes (overrides, restart marker)
+RUN chown -R app:app /app
 USER app
 
 # Labels / metadata

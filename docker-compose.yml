@@ -16,6 +16,8 @@ services:
     volumes:
       # Persist runtime overrides (created by the admin UI)
       - user_config_data:/app/utils/user-config.json
+      # Allow restart trigger file (optional; stored in container FS)
+      # - restart_marker:/app/restart.trigger
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8787/api/health || exit 1"]
@@ -25,3 +27,4 @@ services:
       retries: 3
 volumes:
   user_config_data:
+  # restart_marker:

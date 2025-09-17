@@ -78,10 +78,12 @@ function normalizeConfig(base) {
   }
   // Ensure dedupe + trim
   cfg.tmdbApiKeys = Array.from(new Set(cfg.tmdbApiKeys.map(k=>String(k).trim()).filter(Boolean)));
+  // Do not expose legacy single-key field in merged config output
+  delete cfg.tmdbApiKey;
   // Booleans normalization
   const boolKeys = [
     'enableShowboxProvider','enableXprimeProvider','enable4khdhubProvider','enableMoviesmodProvider','enableMp4hydraProvider','enableVidzeeProvider','enableVixsrcProvider',
-    'disableCache','enablePStreamApi','showboxUseRotatingProxy','disableUrlValidation','disable4khdhubUrlValidation'
+    'disableCache','enablePStreamApi','disableUrlValidation','disable4khdhubUrlValidation'
   ];
   boolKeys.forEach(k=>{ if (cfg[k] === 'true') cfg[k] = true; else if (cfg[k] === 'false') cfg[k] = false; });
   // Default values if undefined
@@ -94,7 +96,7 @@ function normalizeConfig(base) {
   if (cfg.enableVixsrcProvider === undefined) cfg.enableVixsrcProvider = true;
   if (cfg.disableCache === undefined) cfg.disableCache = false;
   if (cfg.enablePStreamApi === undefined) cfg.enablePStreamApi = true;
-  if (cfg.showboxUseRotatingProxy === undefined) cfg.showboxUseRotatingProxy = false;
+  // Proxy features removed; always use direct connections
   if (cfg.disableUrlValidation === undefined) cfg.disableUrlValidation = false;
   if (cfg.disable4khdhubUrlValidation === undefined) cfg.disable4khdhubUrlValidation = false;
   return cfg;
@@ -127,14 +129,14 @@ function applyConfigToEnv(cfg){
   process.env.DISABLE_4KHDHUB_URL_VALIDATION = cfg.disable4khdhubUrlValidation ? 'true':'false';
   // Showbox specific
   if (cfg.showboxCacheDir) process.env.SHOWBOX_CACHE_DIR = cfg.showboxCacheDir; else delete process.env.SHOWBOX_CACHE_DIR;
-  process.env.SHOWBOX_USE_ROTATING_PROXY = cfg.showboxUseRotatingProxy ? 'true':'false';
-  if (cfg.showboxProxyPrimary) process.env.SHOWBOX_PROXY_URL_VALUE = cfg.showboxProxyPrimary; else delete process.env.SHOWBOX_PROXY_URL_VALUE;
-  if (cfg.showboxProxyAlternate) process.env.SHOWBOX_PROXY_URL_ALTERNATE = cfg.showboxProxyAlternate; else delete process.env.SHOWBOX_PROXY_URL_ALTERNATE;
-  // Other provider proxies
-  if (cfg.xprimeProxyUrl) process.env.XPRIME_PROXY_URL = cfg.xprimeProxyUrl; else delete process.env.XPRIME_PROXY_URL;
-  if (cfg.vidzeeProxyUrl) process.env.VIDZEE_PROXY_URL = cfg.vidzeeProxyUrl; else delete process.env.VIDZEE_PROXY_URL;
-  if (cfg.vidsrcProxyUrl) process.env.VIDSRC_PROXY_URL = cfg.vidsrcProxyUrl; else delete process.env.VIDSRC_PROXY_URL;
-  if (cfg.moviesmodProxyUrl) process.env.MOVIESMOD_PROXY_URL = cfg.moviesmodProxyUrl; else delete process.env.MOVIESMOD_PROXY_URL;
+  // Proxy settings removed; ensure legacy envs are cleared
+  delete process.env.SHOWBOX_USE_ROTATING_PROXY;
+  delete process.env.SHOWBOX_PROXY_URL_VALUE;
+  delete process.env.SHOWBOX_PROXY_URL_ALTERNATE;
+  delete process.env.XPRIME_PROXY_URL;
+  delete process.env.VIDZEE_PROXY_URL;
+  delete process.env.VIDSRC_PROXY_URL;
+  delete process.env.MOVIESMOD_PROXY_URL;
   if (cfg.defaultRegion) process.env.FEBBOX_REGION = cfg.defaultRegion; // alias
 }
 
@@ -159,14 +161,8 @@ function loadConfig() {
     enableVixsrcProvider: process.env.ENABLE_VIXSRC_PROVIDER,
     disableCache: process.env.DISABLE_CACHE,
     enablePStreamApi: process.env.ENABLE_PSTREAM_API,
-    showboxUseRotatingProxy: process.env.SHOWBOX_USE_ROTATING_PROXY,
     showboxCacheDir: process.env.SHOWBOX_CACHE_DIR || null,
-    showboxProxyPrimary: process.env.SHOWBOX_PROXY_URL_VALUE || null,
-    showboxProxyAlternate: process.env.SHOWBOX_PROXY_URL_ALTERNATE || null,
-    xprimeProxyUrl: process.env.XPRIME_PROXY_URL || null,
-    vidzeeProxyUrl: process.env.VIDZEE_PROXY_URL || null,
-    vidsrcProxyUrl: process.env.VIDSRC_PROXY_URL || null,
-    moviesmodProxyUrl: process.env.MOVIESMOD_PROXY_URL || null,
+    // Proxy/env paths removed; always direct connections
     disableUrlValidation: process.env.DISABLE_URL_VALIDATION,
     disable4khdhubUrlValidation: process.env.DISABLE_4KHDHUB_URL_VALIDATION
   };

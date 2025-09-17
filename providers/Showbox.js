@@ -169,8 +169,7 @@ const CACHE_DIR = process.env.SHOWBOX_CACHE_DIR
     ? process.env.SHOWBOX_CACHE_DIR
     : (process.env.VERCEL ? path.join('/tmp', '.cache') : path.join(require('os').tmpdir(), 'tmdb-embed-showbox-cache'));
 console.log(`Using cache directory: ${CACHE_DIR}`);
-// MODIFICATION: Remove hardcoded SHOWBOX_PROXY_URL, will use environment variable
-// const SHOWBOX_PROXY_URL = "https://starlit-valkyrie-39f5ab.netlify.app/?destination="; 
+
 
 // Ensure cache directories exist
 const ensureCacheDir = async (dirPath) => {
@@ -1355,8 +1354,7 @@ class ShowBoxScraper {
         this.userCookie = userCookie;
     // ScraperAPI key support removed
 
-        // Initialize proxy rotation counter for this instance
-        this.proxyCounter = Math.floor(Math.random() * 1000); // Random start to avoid patterns
+        
 
         this.baseHeaders = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -1374,31 +1372,7 @@ class ShowBoxScraper {
         };
     }
 
-    // Get the next proxy URL from the rotation
-    getNextProxy() {
-        // Read proxy configuration from environment
-        const useRotatingProxy = process.env.SHOWBOX_USE_ROTATING_PROXY === 'true';
-        const primaryProxy = process.env.SHOWBOX_PROXY_URL_VALUE;
-        const alternateProxy = process.env.SHOWBOX_PROXY_URL_ALTERNATE;
-
-        // Increment the counter for this instance
-        this.proxyCounter++;
-
-    // ScraperAPI support removed; simple proxy rotation only
-
-        // Return direct connection if both proxies are missing
-        if (!primaryProxy && !alternateProxy) return null;
-
-        // If rotation disabled or alternate proxy not set, just use primary proxy
-        if (!useRotatingProxy || !alternateProxy) return primaryProxy;
-
-        // Use modulo to alternate between available proxies
-        const proxyIndex = this.proxyCounter % 2;
-        const selectedProxy = proxyIndex === 0 ? primaryProxy : alternateProxy;
-
-        console.log(`[Rotating Proxy] Selected proxy ${proxyIndex + 1}/2 for request #${this.proxyCounter}`);
-        return selectedProxy;
-    }
+    
 
     async _makeRequest(url, isJsonExpected = false) {
     // Removed unused timerLabel variable (profiling optional)
@@ -1416,22 +1390,8 @@ class ShowBoxScraper {
         }
         // For HTML requests, we don't cache the raw HTML anymore - it's too large and wasteful
 
-        // Get the next proxy URL from the rotation
-        const selectedProxy = this.getNextProxy();
-        let requestUrl = url;
-    // removed unused isUsingScraperApi flag
-
-        if (selectedProxy) {
-            if (typeof selectedProxy === 'function') {
-                requestUrl = selectedProxy(url); // Direct transformation
-            } else if (selectedProxy.trim() !== '') {
-                // This is a regular proxy URL
-                requestUrl = `${selectedProxy}${encodeURIComponent(url)}`;
-                console.log(`ShowBoxScraper: Making request to: ${url} via Proxy: ${selectedProxy}`);
-            }
-        } else {
-            console.log(`ShowBoxScraper: Making direct request to: ${url} (no proxy available)`);
-        }
+        // Always make direct requests
+        const requestUrl = url;
 
     // Removed console.time call (timerLabel removed)
 
@@ -1463,7 +1423,7 @@ class ShowBoxScraper {
         try {
             const response = await axios.get(requestUrl, {
                 headers: currentHeaders,
-                timeout: 30000 // Consider increasing if proxy adds significant latency
+                timeout: 30000
             });
             const responseData = response.data;
 
@@ -2851,16 +2811,8 @@ const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, epis
             console.log(`[PStream] No ui-token available, making unauthenticated request`);
         }
         
-        // Check if proxy should be used
-        const useProxy = process.env.SHOWBOX_PROXY_URL_VALUE && process.env.SHOWBOX_PROXY_URL_VALUE.trim() !== '';
-        let finalApiUrl = apiUrl;
-        
-        if (useProxy) {
-            finalApiUrl = `${process.env.SHOWBOX_PROXY_URL_VALUE}${encodeURIComponent(apiUrl)}`;
-            console.log(`[PStream] Using proxy for request: ${finalApiUrl}`);
-        } else {
-            console.log(`[PStream] Making direct request (no proxy configured)`);
-        }
+        // Always use direct API URL
+        const finalApiUrl = apiUrl;
         
         // Make the request
         const response = await axios.get(finalApiUrl, {

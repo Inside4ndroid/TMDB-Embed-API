@@ -66,8 +66,11 @@ function recordLoginSuccess(ip){
   loginAttempts.delete(ip);
 }
 
-// Guard against premature process.exit from imported legacy modules
+// Guard against premature process.exit from imported legacy modules, but allow controlled restarts
+const realProcessExit = process.exit.bind(process);
+let allowControlledExit = false;
 process.exit = function(code){
+  if (allowControlledExit) return realProcessExit(code);
   console.warn('[diagnostic] Intercepted process.exit with code', code, new Error('exit trace').stack);
   // keep process alive for debugging
 };
@@ -196,6 +199,28 @@ app.post('/api/config', (req,res) => {
   if (patch.defaultProviders && !Array.isArray(patch.defaultProviders)) return res.status(400).json({ success:false, error:'DEFAULT_PROVIDERS_NOT_ARRAY'});
   const ok = saveConfigPatch(patch);
   res.json({ success: ok, merged: config });
+});
+
+// Restart endpoint (requires auth via session cookie on /config.html UI)
+app.post('/api/restart', (req,res) => {
+  const sess = getSession(req);
+  if(!sess) return res.status(401).json({ success:false, error:'UNAUTHORIZED' });
+  res.json({ success:true, message:'RESTARTING' });
+  // Give the response a moment to flush
+  setTimeout(()=>{
+    try {
+      const fs = require('fs');
+      const restartMarker = require('path').join(process.cwd(), 'restart.trigger');
+      fs.writeFileSync(restartMarker, String(Date.now()));
+      console.warn('[control] wrote restart.trigger to notify nodemon');
+    } catch (e) {
+      console.warn('[control] failed to write restart marker:', e.message);
+    }
+    console.warn('[control] restarting process by exit(0)');
+    // Let nodemon detect the file change and restart the app
+    allowControlledExit = true;
+    realProcessExit(0);
+  }, 300);
 });
 
 // --- Basic informational endpoints ---

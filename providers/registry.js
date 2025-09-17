@@ -227,7 +227,7 @@ async function fetchXprime(ctx) {
       return [];
     }
     const t0 = Date.now();
-  const streams = await xprime.getXprimeStreams(title, year, mediaType, ctx.season || null, ctx.episode || null, true, null);
+  const streams = await xprime.getXprimeStreams(title, year, mediaType, ctx.season || null, ctx.episode || null);
     const durationMs = Date.now() - t0;
     console.log(`[registry] xprime fetch duration ${durationMs}ms (title='${title}' year=${year}) returned ${Array.isArray(streams)?streams.length:0}`);
     if (!Array.isArray(streams) || !streams.length) return [];

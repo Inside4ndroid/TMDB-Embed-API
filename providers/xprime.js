@@ -4,7 +4,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 
-const XPRIME_PROXY_URL = process.env.XPRIME_PROXY_URL || null;
 const RETRY_DELAY_MS_XPRIME = 1000;
 const MAX_RETRIES_XPRIME = 3;
 
@@ -105,7 +104,7 @@ async function fetchStreamSize(url) {
     }
 }
 
-async function getXprimeStreams(title, year, type, seasonNum, episodeNum, useProxy = true) {
+async function getXprimeStreams(title, year, type, seasonNum, episodeNum) {
     if (!title || !year) return [];
     const encoded = encodeURIComponent(title);
     let apiUrl;
@@ -116,19 +115,12 @@ async function getXprimeStreams(title, year, type, seasonNum, episodeNum, usePro
         apiUrl = `https://backend.xprime.tv/primebox?name=${encoded}&year=${year}&fallback_year=${year}&season=${seasonNum}&episode=${episodeNum}`;
     } else return [];
 
-    console.log(`[Xprime.tv] Fetch attempt '${title}' (${year}) type=${type} useProxy=${useProxy}`);
+    console.log(`[Xprime.tv] Fetch attempt '${title}' (${year}) type=${type}`);
 
     let resJson;
     try {
-        if (useProxy && XPRIME_PROXY_URL) {
-            const base = XPRIME_PROXY_URL.replace(/\/$/, '');
-            const proxied = `${base}/?destination=${encodeURIComponent(apiUrl)}`;
-            const r = await fetchWithRetry(proxied, { headers: BROWSER_HEADERS_XPRIME });
-            resJson = await r.json();
-        } else {
-            const r = await fetchWithRetry(apiUrl, { headers: BROWSER_HEADERS_XPRIME });
-            resJson = await r.json();
-        }
+        const r = await fetchWithRetry(apiUrl, { headers: BROWSER_HEADERS_XPRIME });
+        resJson = await r.json();
     } catch (e) {
         console.error('[Xprime.tv] Fetch failed:', e.message);
         return [];
