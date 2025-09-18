@@ -84,17 +84,13 @@ const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
                 const language = sourceItem.language || sourceItem.lang;
                 
                 return {
-                    title: `VidZee S${sr} - ${quality}`,
+                    name: `VidZee Server${sr} - ${quality} - ${language}`,
+                    title: `VidZee Server${sr} - ${quality} - ${language}`,
                     url: sourceItem.link, // Use sourceItem.link for the URL
                     quality: quality,
-                    language: language,
                     provider: "VidZee",
-                    size: "Unknown size",
-                    behaviorHints: {
-                        notWebReady: true,
-                        headers: { 
-                            'Referer': 'https://core.vidzee.wtf/'
-                        }
+                    headers: { 
+                        'Referer': 'https://core.vidzee.wtf/'
                     }
                 };
             }).filter(stream => stream.url);

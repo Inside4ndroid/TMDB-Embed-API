@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=flat" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Version-1.0.3-informational?style=flat" />
+  <img src="https://img.shields.io/badge/Version-1.0.4-informational?style=flat" />
   <img src="https://img.shields.io/docker/pulls/inside4ndroid/tmdb-embed-api?label=Docker%20Pulls&style=flat" />
 </p>
 
@@ -34,14 +34,15 @@
 
 ## ✨ Features
 - **Multi‑TMDB Key Rotation** – Supply multiple API keys; one is chosen randomly per request.
-- **Provider Aggregation** – Pluggable providers (Showbox, 4khdhub, MoviesMod, MP4Hydra, VidZee, Vixsrc, Xprime) with per‑provider enable toggles + default selection.
+- **Provider Aggregation** – Pluggable providers (Showbox, 4khdhub, MoviesMod, MP4Hydra, VidZee, Vixsrc, Xprime, MoviesClub) with per‑provider enable toggles + default selection.
+- **🔥 Plugin System** – Drop new provider files in `providers/` and add its exported function to the registry map (`providers/registry.js` → `providerFunctionMap`).
 - **Dynamic Filtering** – Minimum quality presets, custom JSON quality map, codec exclusion rules (presets + JSON).
 - **Runtime Overrides UI** – Fully interactive web admin at `/` (login protected) writing to `utils/user-config.json`.
 - **Session Auth + Rate Limiting** – Login system with brute‑force lockouts, logout, password change.
 - **Status & Health Panel** – Live metrics, provider status, endpoint list, functional provider checks.
 - **Config Propagation** – Overrides mirrored to `process.env` for legacy compatibility (no `.env` required after first save).
 - **Back‑Navigation Safe** – Cache-control + visibility/session revalidation.
-- **Extensible** – Simple provider registry pattern.
+- **Extensible** – Simple drop-in provider plugin system.
 
 ---
 
@@ -77,6 +78,11 @@ docker pull inside4ndroid/tmdb-embed-api:latest
 docker run --name tmdb-embed-api -p 8787:8787 \ 
   -e TMDB_API_KEY=YOUR_TMDB_KEY \
   inside4ndroid/tmdb-embed-api:latest
+```
+
+Or the minimal quick-test run:
+```bash
+docker run -it -p 8787:8787 inside4ndroid/tmdb-embed-api:latest
 ```
 
 Persist overrides (Windows PowerShell example) by mounting a local file:
@@ -202,22 +208,64 @@ Session is revalidated on visibility and back/forward navigation to prevent stal
 ---
 
 ## 🔌 Providers
-Current built‑in providers:
-- `showbox`
-- `4khdhub`
-- `moviesmod`
-- `mp4hydra`
-- `vidzee`
-- `vixsrc`
-- `xprime`
+The API supports a plugin system. Drop a new provider file in the `providers/` folder and register its exported function in `providers/registry.js` under `providerFunctionMap`.
 
-You can enable/disable and mark defaults via the Provider Matrix in the UI. If **no defaults** are selected, all enabled providers participate in aggregation.
+### Current Built-in Providers
+- `showbox` - Showbox/PStream integration
+- `4khdhub` - 4KHDHub streams
+- `moviesmod` - MoviesMod streams  
+- `mp4hydra` - MP4Hydra streams
+- `vidzee` - VidZee streams
+- `vixsrc` - Vixsrc streams
+- `xprime` - Xprime streams
+- `uhdmovies` - UHD Movies streams
+- `moviesclub` - MoviesClub streams
 
-### Adding a New Provider (Outline)
-1. Create `providers/myprovider.js` exporting an async fetch function (see existing files for patterns).
-2. Lazy‑load it in `providers/registry.js` similar to others.
-3. Add a config flag (`enableMyproviderProvider`) if you want toggle support.
-4. Update the provider matrix arrays in `public/index.js`.
+### Adding a New Provider
+1. **Create** `providers/yourprovider.js` with your stream fetching logic
+2. **Export** a function like `getYourproviderStreams(tmdbId, mediaType, season, episode)`
+3. **Register** it in `providers/registry.js` → `providerFunctionMap`:
+   ```js
+   // providers/registry.js
+   const providerFunctionMap = {
+     'Showbox.js': 'getStreamsFromTmdbId',
+     '4khdhub.js': 'get4KHDHubStreams',
+     'moviesmod.js': 'getMoviesModStreams',
+     'MP4Hydra.js': 'getMP4HydraStreams',
+     'VidZee.js': 'getVidZeeStreams',
+     'vixsrc.js': 'getVixsrcStreams',
+     'xprime.js': 'getXprimeStreams',
+     'uhdmovies.js': 'getUHDMoviesStreams',
+     'moviesclub.js': 'getMoviesClubStreams',
+     'yourprovider.js': 'getYourproviderStreams'
+   };
+   ```
+4. The provider will appear in the admin UI with an enable/disable toggle.
+
+**Example Provider (Unified Output):**
+```javascript
+async function getYourproviderStreams(tmdbId, mediaType, season, episode) {
+  // Your scraping/API logic here
+  return [{
+    title: "Fight Club - 1080p [YourProvider #1]",
+    url: "https://stream.url/video.mp4",
+    quality: "1080p",
+    provider: "yourprovider",
+    headers: { "User-Agent": "Mozilla/5.0" }
+  }];
+}
+
+module.exports = { getYourproviderStreams };
+```
+
+> **⚠️ Important**: All providers must return streams in the unified JSON format to ensure compatibility with filtering and aggregation.
+
+The system automatically:
+- ✅ Detects new provider files
+- ✅ Adds enable/disable toggles in the admin UI
+- ✅ Includes them in stream aggregation
+- ✅ Applies filtering and quality controls
+- ✅ No core file edits required!
 
 ---
 
@@ -238,18 +286,14 @@ Aggregate endpoint auto-resolves IMDb when needed and merges provider output bef
 
 ---
 
-## 🧪 Stream Object Shape (Typical)
+## 🧪 Stream Object Schema (Unified)
 ```json
 {
-  "title": "Example Title",
-  "url": "https://...",
+  "title": "Fight Club - 1080p [MP4Hydra #2]",
+  "url": "https://stream.url/video.mp4",
   "quality": "1080p",
-  "provider": "showbox",
-  "size": null,
-  "languages": ["en"],
-  "subtitles": [],
-  "codecs": ["H264"],
-  "headers": { "Referer": "..." }
+  "provider": "mp4hydra",
+  "headers": { "User-Agent": "Mozilla/5.0" }
 }
 ```
 

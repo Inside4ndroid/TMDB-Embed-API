@@ -1106,6 +1106,8 @@ async function getMoviesModStreams(tmdbId, mediaType, seasonNum = null, episodeN
                             title: `${cleanFileName}\n${sizeInfo || ''}${techDetailsString}`,
                             url: selectedResult.url,
                             quality: actualQuality,
+                            provider: 'moviesmod',
+                            headers: {}
                         };
                     } else {
                         console.warn(`[MoviesMod] Unsupported URL type for final processing: ${targetLink?.url}`);

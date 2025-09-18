@@ -86,7 +86,7 @@ const getCookieForRequest = async (regionPreference = null, userCookie = null) =
             console.log('[CookieManager] Using user-supplied cookie from global state (legacy mode) for this cycle.');
             baseCookieToUse = global.currentRequestUserCookie;
         }
-    // No file-based fallback rotation (env-only)
+        // No file-based fallback rotation (env-only)
         else {
             console.log('[CookieManager] No user-supplied cookies available for this cycle.');
             baseCookieToUse = '';
@@ -156,9 +156,9 @@ const FEBBOX_FILE_SHARE_LIST_URL = "https://www.febbox.com/file/file_share_list"
 // const SCRAPER_API_URL = 'https://api.scraperapi.com/';
 // TMDB key now sourced from config/env; no hardcoded public key
 const { getTmdbApiKey } = require('../utils/tmdbKey');
-function obtainTmdbKey(){
+function obtainTmdbKey() {
     const k = getTmdbApiKey();
-    if(!k) console.warn('[Showbox] No TMDB API key available (multi-key set empty).');
+    if (!k) console.warn('[Showbox] No TMDB API key available (multi-key set empty).');
     return k;
 }
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -534,9 +534,9 @@ const _searchAndExtractShowboxUrl = async (searchTerm, originalTmdbTitle, mediaY
                 if (cachedResult === 'NO_MATCH_FOUND') return { url: null, score: -1 };
                 return { url: cachedResult, score: 10 };
             } else if (cachedResult.result === 'NO_MATCH_FOUND') {
-                 // For stream searches, always retry immediately - content availability can change anytime
-                 console.log(`  CACHE HIT: Previously no match found for ${originalTmdbTitle} ${mediaYear || ''}, but retrying immediately for fresh content.`);
-                 // Continue to search logic below to retry immediately
+                // For stream searches, always retry immediately - content availability can change anytime
+                console.log(`  CACHE HIT: Previously no match found for ${originalTmdbTitle} ${mediaYear || ''}, but retrying immediately for fresh content.`);
+                // Continue to search logic below to retry immediately
             } else {
                 console.log(`  CACHE HIT for ShowBox search best match URL (${originalTmdbTitle} ${mediaYear || ''}): ${cachedResult}`);
                 return { url: cachedResult, score: 10 };
@@ -819,7 +819,7 @@ const _searchAndExtractShowboxUrl = async (searchTerm, originalTmdbTitle, mediaY
                         // Allow for very close matches (like plurals or slight variations)
                         if (tmdbWord.length > 3 && itemWord.length > 3) {
                             return (itemWord.includes(tmdbWord) && itemWord.length - tmdbWord.length <= 2) ||
-                                   (tmdbWord.includes(itemWord) && tmdbWord.length - itemWord.length <= 2);
+                                (tmdbWord.includes(itemWord) && tmdbWord.length - itemWord.length <= 2);
                         }
                         return false;
                     })) {
@@ -988,8 +988,8 @@ const getShowboxUrlFromTmdbInfo = async (tmdbType, tmdbId, regionPreference = nu
     let tmdbData = await getFromCache(mainCacheKey, mainCacheSubDir);
 
     if (!tmdbData || process.env.DISABLE_CACHE === 'true') {
-    const TMDB_API_KEY = obtainTmdbKey();
-    const tmdbApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}?api_key=${TMDB_API_KEY}`;
+        const TMDB_API_KEY = obtainTmdbKey();
+        const tmdbApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}?api_key=${TMDB_API_KEY}`;
         console.log(`  Fetching TMDB data from: ${tmdbApiUrl}`);
         try {
             const response = await axios.get(tmdbApiUrl, { timeout: 10000 });
@@ -1021,8 +1021,8 @@ const getShowboxUrlFromTmdbInfo = async (tmdbType, tmdbId, regionPreference = nu
     let tmdbAlternativeTitlesData = await getFromCache(altTitlesCacheKey, mainCacheSubDir);
 
     if (!tmdbAlternativeTitlesData || process.env.DISABLE_CACHE === 'true') {
-    const TMDB_API_KEY = obtainTmdbKey();
-    const altTitlesApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/alternative_titles?api_key=${TMDB_API_KEY}`;
+        const TMDB_API_KEY = obtainTmdbKey();
+        const altTitlesApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/alternative_titles?api_key=${TMDB_API_KEY}`;
         console.log(`  Fetching TMDB alternative titles from: ${altTitlesApiUrl}`);
         try {
             const response = await axios.get(altTitlesApiUrl, { timeout: 10000 });
@@ -1047,8 +1047,8 @@ const getShowboxUrlFromTmdbInfo = async (tmdbType, tmdbId, regionPreference = nu
     let tmdbBackdropPaths = [];
 
     if (!tmdbImagesData || process.env.DISABLE_CACHE === 'true') {
-    const TMDB_API_KEY = obtainTmdbKey();
-    const imagesApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/images?api_key=${TMDB_API_KEY}`;
+        const TMDB_API_KEY = obtainTmdbKey();
+        const imagesApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/images?api_key=${TMDB_API_KEY}`;
         console.log(`  Fetching TMDB images from: ${imagesApiUrl}`);
         try {
             const response = await axios.get(imagesApiUrl, { timeout: 10000 });
@@ -1352,9 +1352,9 @@ class ShowBoxScraper {
         // Store the region preference and user cookie
         this.regionPreference = regionPreference;
         this.userCookie = userCookie;
-    // ScraperAPI key support removed
+        // ScraperAPI key support removed
 
-        
+
 
         this.baseHeaders = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -1372,10 +1372,10 @@ class ShowBoxScraper {
         };
     }
 
-    
+
 
     async _makeRequest(url, isJsonExpected = false) {
-    // Removed unused timerLabel variable (profiling optional)
+        // Removed unused timerLabel variable (profiling optional)
 
         // For JSON requests, we still cache normally since they're small
         if (isJsonExpected) {
@@ -1393,7 +1393,7 @@ class ShowBoxScraper {
         // Always make direct requests
         const requestUrl = url;
 
-    // Removed console.time call (timerLabel removed)
+        // Removed console.time call (timerLabel removed)
 
         // Get the cookie with region preference if site requires it
         let cookieValue = null;
@@ -1807,7 +1807,7 @@ const convertImdbToTmdb = async (imdbId, regionPreference = null, expectedType =
 
         if (findResults) {
             let result = null;
-            
+
             // Context-aware prioritization based on expected type
             if (expectedType === 'tv' || expectedType === 'series') {
                 // For series requests, prioritize TV results
@@ -1835,7 +1835,7 @@ const convertImdbToTmdb = async (imdbId, regionPreference = null, expectedType =
                     result = { tmdbId: String(findResults.tv_results[0].id), tmdbType: 'tv', title: findResults.tv_results[0].name || findResults.tv_results[0].original_name };
                 }
             }
-            
+
             if (findResults.person_results && findResults.person_results.length > 0 && !result) {
                 // Could handle other types if necessary, e.g. person, but for streams, movie/tv are key
                 console.log(`    IMDb ID ${imdbId} resolved to a person, not a movie or TV show on TMDB.`);
@@ -1868,47 +1868,47 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
     console.log(`Getting streams for TMDB ${tmdbType}/${tmdbId}${seasonNum !== null ? `, Season ${seasonNum}` : ''}${episodeNum !== null ? `, Episode ${episodeNum}` : ''}`);
 
     // PRIMARY METHOD: Try PStream API first (if enabled)
-    
-        try {
-            // Get TMDB data to extract IMDB ID
-            const tmdbData = await getTmdbDataForPStream(tmdbType, tmdbId);
-            if (tmdbData && tmdbData.imdbId) {
-                console.log(`[PStream Primary] Attempting PStream API for IMDB ID: ${tmdbData.imdbId}`);
 
-                const pstreamStreams = await getStreamsFromPStreamAPI(
-                    tmdbData.imdbId,
-                    tmdbType,
-                    seasonNum,
-                    episodeNum,
-                    regionPreference,
-                    userCookie
-                );
+    try {
+        // Get TMDB data to extract IMDB ID
+        const tmdbData = await getTmdbDataForPStream(tmdbType, tmdbId);
+        if (tmdbData && tmdbData.imdbId) {
+            console.log(`[PStream Primary] Attempting PStream API for IMDB ID: ${tmdbData.imdbId}`);
 
-                if (pstreamStreams && pstreamStreams.length > 0) {
-                    console.log(`[PStream Primary] SUCCESS: Found ${pstreamStreams.length} streams from PStream API`);
+            const pstreamStreams = await getStreamsFromPStreamAPI(
+                tmdbData.imdbId,
+                tmdbType,
+                seasonNum,
+                episodeNum,
+                regionPreference,
+                userCookie
+            );
 
-                    // Fetch sizes for PStream streams
-                    if (pstreamStreams.length > 0) {
-                        const sizePromises = pstreamStreams.map(async (stream) => {
-                            stream.size = await fetchStreamSize(stream.url);
-                            return stream;
-                        });
-                        await Promise.all(sizePromises); // removed unused streamsWithSizes var
-                    }
+            if (pstreamStreams && pstreamStreams.length > 0) {
+                console.log(`[PStream Primary] SUCCESS: Found ${pstreamStreams.length} streams from PStream API`);
 
-                    const sortedStreams = sortStreamsByQuality(pstreamStreams);
-                    console.timeEnd(mainTimerLabel);
-                    return sortedStreams;
-                } else {
-                    console.log(`[PStream Primary] No streams found from PStream API, falling back to FebBox`);
+                // Fetch sizes for PStream streams
+                if (pstreamStreams.length > 0) {
+                    const sizePromises = pstreamStreams.map(async (stream) => {
+                        stream.size = await fetchStreamSize(stream.url);
+                        return stream;
+                    });
+                    await Promise.all(sizePromises); // removed unused streamsWithSizes var
                 }
+
+                const sortedStreams = sortStreamsByQuality(pstreamStreams);
+                console.timeEnd(mainTimerLabel);
+                return sortedStreams;
             } else {
-                console.log(`[PStream Primary] Could not get IMDB ID from TMDB data, falling back to FebBox`);
+                console.log(`[PStream Primary] No streams found from PStream API, falling back to FebBox`);
             }
-        } catch (error) {
-            console.error(`[PStream Primary] Error with PStream API: ${error.message}, falling back to FebBox`);
+        } else {
+            console.log(`[PStream Primary] Could not get IMDB ID from TMDB data, falling back to FebBox`);
         }
-    
+    } catch (error) {
+        console.error(`[PStream Primary] Error with PStream API: ${error.message}, falling back to FebBox`);
+    }
+
     // FALLBACK METHOD: Use original FebBox/ShowBox logic
     console.log(`[Fallback] Using FebBox/ShowBox method`);
     const tmdbInfo = await getShowboxUrlFromTmdbInfo(tmdbType, tmdbId, regionPreference);
@@ -1924,19 +1924,19 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
 
     // Check if we have cached FebBox share links to avoid redundant ShowBox requests
     let febboxShareInfos = tmdbInfo.febboxShareInfos;
-    
+
     if (!febboxShareInfos) {
         // Only make ShowBox request if FebBox links are not cached
         console.log(`No cached FebBox links found, extracting from ShowBox: ${showboxUrl}`);
-    const showboxScraper = new ShowBoxScraper(regionPreference, userCookie);
+        const showboxScraper = new ShowBoxScraper(regionPreference, userCookie);
         febboxShareInfos = await showboxScraper.extractFebboxShareLinks(showboxUrl);
-        
+
         if (!febboxShareInfos || febboxShareInfos.length === 0) {
             console.log(`No FebBox share links found for ${showboxUrl}`);
             console.timeEnd(mainTimerLabel);
             return [];
         }
-        
+
         // Update cache with FebBox share links to avoid future ShowBox requests
         if (process.env.DISABLE_CACHE !== 'true') {
             const updatedTmdbInfo = { ...tmdbInfo, febboxShareInfos };
@@ -1980,10 +1980,12 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
                             }
                         } catch (e) { /* ignore if URL parsing fails */ }
                         streamsFromThisShareInfo.push({
+                            name: streamTitle,
                             title: streamTitle,
                             url: source.url,
                             quality: parseQualityFromLabel(source.label),
-                            codecs: extractCodecDetails(key5FromDirectSource || streamTitle)
+                            provider: 'Febbox Direct',
+                            headers: {}
                         });
                     }
                     // If direct sources are found, original code used 'continue', 
@@ -2007,10 +2009,12 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
 
                             const streamTitle = `${baseStreamTitle} - ${source.label}`;
                             streamsFromThisShareInfo.push({
+                                name: streamTitle,
                                 title: streamTitle,
                                 url: source.url,
                                 quality: parseQualityFromLabel(source.label),
-                                codecs: extractCodecDetails(source.detailedFilename || streamTitle)
+                                provider: 'Febbox FID',
+                                headers: {}
                             });
                         }
                     }
@@ -2034,7 +2038,7 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
             stream.size = await fetchStreamSize(stream.url);
             return stream;
         });
-    await Promise.all(sizePromises); // removed unused streamsWithSizes var
+        await Promise.all(sizePromises); // removed unused streamsWithSizes var
         console.timeEnd(`getStreamsFromTmdbId_fetchStreamSizes_${tmdbType}_${tmdbId}`);
     }
 
@@ -2202,10 +2206,12 @@ const processShowWithSeasonsEpisodes = async (febboxUrl, showboxTitle, seasonNum
             for (const source of directSources) {
                 const streamTitle = `${showboxTitle} - ${source.label}`;
                 streamsForThisCall.push({ // MODIFIED: Push to streamsForThisCall
+                    name: streamTitle,
                     title: streamTitle,
                     url: source.url,
                     quality: parseQualityFromLabel(source.label),
-                    codecs: extractCodecDetails(source.detailedFilename || streamTitle)
+                    provider: 'Febbox Direct',
+                    headers: {}
                 });
             }
             console.timeEnd(processTimerLabel);
@@ -2222,10 +2228,12 @@ const processShowWithSeasonsEpisodes = async (febboxUrl, showboxTitle, seasonNum
                 for (const source of sources) {
                     const streamTitle = `${showboxTitle} - ${source.label}`;
                     streamsForThisCall.push({ // MODIFIED: Push to streamsForThisCall
+                        name: streamTitle,
                         title: streamTitle,
                         url: source.url,
                         quality: parseQualityFromLabel(source.label),
-                        codecs: extractCodecDetails(source.detailedFilename || streamTitle)
+                        provider: 'Febbox FID',
+                        headers: {}
                     });
                 }
             }
@@ -2506,10 +2514,12 @@ const processShowWithSeasonsEpisodes = async (febboxUrl, showboxTitle, seasonNum
 
                     const streamTitle = `${showboxTitle} - S${seasonNum}${episodeNum && selectedEpisode && fid === selectedEpisode.fid ? `E${episodeNum}` : (episodeDetail ? `E${episodeDetail.episodeNum}` : '')} - ${episodeName} - ${source.label}`;
                     streamsForThisCall.push({ // MODIFIED: Push to streamsForThisCall
+                        name: streamTitle,
                         title: streamTitle,
                         url: source.url,
                         quality: parseQualityFromLabel(source.label),
-                        codecs: extractCodecDetails(source.detailedFilename || streamTitle)
+                        provider: 'Febbox FID',
+                        headers: {}
                     });
                 }
             } else {
@@ -2722,27 +2732,27 @@ const PSTREAM_ACCEPT_HEADER = 'pstream.org';
 const PSTREAM_REGION_MAPPING = {
     // US Regions
     'USA7': 'East',
-    'USA6': 'West', 
+    'USA6': 'West',
     'USA5': 'East',
     'USA4': 'West',
     'USA3': 'West',
     'USA2': 'West',
     'USA1': 'West',
-    
+
     // European Regions
     'UK3': 'Europe',
     'FR1': 'Europe',
     'DE2': 'Europe',
     'EU1': 'Europe',
     'EU2': 'Europe',
-    
+
     // Asian Regions
     'HK1': 'Asia',
     'IN1': 'Asia',
     'SZ': 'Asia',
     'ASIA1': 'Asia',
     'ASIA2': 'Asia',
-    
+
     // Other Regions
     'CA1': 'East', // Canada maps to East (US East)
     'AU1': 'Asia'  // Australia maps to Asia
@@ -2753,12 +2763,12 @@ const mapRegionForPStream = (febboxRegion) => {
     if (!febboxRegion) {
         return PSTREAM_REGION_MAPPING[DEFAULT_OSS_REGION] || 'East';
     }
-    
+
     const mappedRegion = PSTREAM_REGION_MAPPING[febboxRegion];
     if (mappedRegion) {
         return mappedRegion;
     }
-    
+
     // Fallback to East if region not found
     console.log(`[PStream] Region ${febboxRegion} not found in mapping, using East as fallback`);
     return 'East';
@@ -2768,7 +2778,7 @@ const mapRegionForPStream = (febboxRegion) => {
 const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, episodeNum = null, regionPreference = null, userCookie = null) => {
     const timerLabel = `getStreamsFromPStreamAPI_${imdbId}_${tmdbType}` + (seasonNum ? `_s${seasonNum}` : '') + (episodeNum ? `_e${episodeNum}` : '');
     console.time(timerLabel);
-    
+
     try {
         // Build the PStream API URL
         let apiUrl;
@@ -2780,12 +2790,12 @@ const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, epis
             console.log(`[PStream] Invalid parameters for ${tmdbType}: season=${seasonNum}, episode=${episodeNum}`);
             return [];
         }
-        
+
         console.log(`[PStream] Making request to: ${apiUrl}`);
-        
+
         // Get the region for PStream API
         const pstreamRegion = mapRegionForPStream(regionPreference || global.lastRequestedRegion?.used);
-        
+
         // Prepare headers for PStream API
         const headers = {
             'accept': PSTREAM_ACCEPT_HEADER,
@@ -2801,7 +2811,7 @@ const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, epis
             'sec-fetch-site': 'same-site',
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
         };
-        
+
         // Add ui-token if available
         const uiToken = await getUiTokenForPStream(userCookie);
         if (uiToken) {
@@ -2810,30 +2820,30 @@ const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, epis
         } else {
             console.log(`[PStream] No ui-token available, making unauthenticated request`);
         }
-        
+
         // Always use direct API URL
         const finalApiUrl = apiUrl;
-        
+
         // Make the request
         const response = await axios.get(finalApiUrl, {
             headers: headers,
             timeout: 30000
         });
-        
+
         if (!response.data) {
             console.log(`[PStream] No data received from API`);
             return [];
         }
-        
+
         console.log(`[PStream] Response received, processing streams...`);
-        
+
         // Process the PStream API response
         const streams = processPStreamResponse(response.data, tmdbType, seasonNum, episodeNum);
-        
+
         console.timeEnd(timerLabel);
         console.log(`[PStream] Found ${streams.length} streams`);
         return streams;
-        
+
     } catch (error) {
         console.error(`[PStream] Error fetching streams: ${error.message}`);
         if (error.response) {
@@ -2847,90 +2857,84 @@ const getStreamsFromPStreamAPI = async (imdbId, tmdbType, seasonNum = null, epis
 // Function to process PStream API response and convert to standard stream format
 const processPStreamResponse = (apiResponse, tmdbType, seasonNum, episodeNum) => {
     const streams = [];
-    
+
     try {
         // Log the actual response structure for debugging
         console.log(`[PStream] API Response structure:`, JSON.stringify(apiResponse, null, 2).substring(0, 1000));
         console.log(`[PStream] API Response type:`, typeof apiResponse);
         console.log(`[PStream] API Response keys:`, apiResponse ? Object.keys(apiResponse) : 'null/undefined');
-        
+
         // Check if response has streams object (PStream API format)
         if (apiResponse && apiResponse.streams && typeof apiResponse.streams === 'object') {
             console.log(`[PStream] Found streams object with ${Object.keys(apiResponse.streams).length} quality levels`);
-            
+
             // Process streams object format
             for (const [quality, url] of Object.entries(apiResponse.streams)) {
                 if (url && typeof url === 'string') {
                     // Use "Auto" for name and actual filename for title
-                    const streamName = "Auto";
                     const streamTitle = apiResponse.name || `${tmdbType === 'movie' ? 'PStream' : `PStream - S${seasonNum}E${episodeNum}`} - ${quality}`;
-                    
+
                     streams.push({
-                        name: streamName,
+                        name: streamTitle,
                         title: streamTitle,
                         url: url,
                         quality: parseQualityFromLabel(quality),
-                        codecs: extractCodecDetails(apiResponse.name || quality), // Use filename for codec detection
-                        size: apiResponse.size || 'Unknown size',
-                        provider: 'PStream'
+                        provider: 'PStream',
+                        headers: {}
                     });
                 }
             }
-            
+
             console.log(`[PStream] Successfully parsed ${streams.length} streams from streams object`);
             return streams;
         }
-        
+
         // Check if response has sources array (alternative format)
         if (apiResponse && Array.isArray(apiResponse.sources)) {
             console.log(`[PStream] Found sources array with ${apiResponse.sources.length} sources`);
-            
+
             for (const source of apiResponse.sources) {
                 if (!source.url || !source.quality) {
                     continue;
                 }
-                
-                const streamName = "Auto";
+
                 const streamTitle = apiResponse.name || `${tmdbType === 'movie' ? 'PStream' : `PStream - S${seasonNum}E${episodeNum}`} - ${source.quality}`;
-                
+
                 streams.push({
-                    name: streamName,
+                    name: streamTitle,
                     title: streamTitle,
                     url: source.url,
                     quality: parseQualityFromLabel(source.quality),
-                    codecs: source.codec ? [source.codec] : [],
-                    size: source.size || 'Unknown size',
-                    provider: 'PStream'
+                    provider: 'PStream',
+                    headers: {}
                 });
             }
-            
+
             return streams;
         }
-        
+
         // Check if response has data array (another alternative format)
         if (apiResponse && Array.isArray(apiResponse.data)) {
             console.log(`[PStream] Found 'data' array instead of 'sources'`);
-            
+
             for (const item of apiResponse.data) {
                 if (item.url || item.file) {
-                    const streamName = "Auto";
                     const streamTitle = apiResponse.name || `${tmdbType === 'movie' ? 'PStream' : `PStream - S${seasonNum}E${episodeNum}`} - ${item.quality || item.label || 'Unknown'}`;
-                    
+
                     streams.push({
-                        name: streamName,
+                        name: streamTitle,
                         title: streamTitle,
                         url: item.url || item.file,
                         quality: parseQualityFromLabel(item.quality || item.label),
-                        codecs: item.codec ? [item.codec] : [],
-                        size: item.size || 'Unknown size',
-                        provider: 'PStream'
+                        provider: 'PStream',
+                        headers: {}
                     });
                 }
             }
-            
+
             return streams;
         }
-        
+
         // No recognized format found
         console.log(`[PStream] No recognized stream format found in response`);
         if (apiResponse && apiResponse.message) {
@@ -2938,13 +2942,13 @@ const processPStreamResponse = (apiResponse, tmdbType, seasonNum, episodeNum) =>
         } else if (apiResponse && apiResponse.error) {
             console.log(`[PStream] API returned error:`, apiResponse.error);
         }
-        
+
         return streams;
-        
+
     } catch (error) {
         console.error(`[PStream] Error processing API response: ${error.message}`);
     }
-    
+
     return streams;
 };
 
@@ -2952,15 +2956,15 @@ const processPStreamResponse = (apiResponse, tmdbType, seasonNum, episodeNum) =>
 const getTmdbDataForPStream = async (tmdbType, tmdbId) => {
     const cacheSubDir = 'tmdb_api';
     const cacheKey = `tmdb-${tmdbType}-${tmdbId}.json`;
-    
+
     // Try cache first
     let tmdbData = await getFromCache(cacheKey, cacheSubDir);
-    
+
     if (!tmdbData || process.env.DISABLE_CACHE === 'true') {
-    const TMDB_API_KEY = obtainTmdbKey();
-    const tmdbApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}?api_key=${TMDB_API_KEY}`;
+        const TMDB_API_KEY = obtainTmdbKey();
+        const tmdbApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}?api_key=${TMDB_API_KEY}`;
         console.log(`  [PStream] Fetching TMDB data from: ${tmdbApiUrl}`);
-        
+
         try {
             const response = await axios.get(tmdbApiUrl, { timeout: 10000 });
             tmdbData = response.data;
@@ -2974,22 +2978,22 @@ const getTmdbDataForPStream = async (tmdbType, tmdbId) => {
             return null;
         }
     }
-    
+
     if (!tmdbData) {
         console.log(`  [PStream] No TMDB data found for ${tmdbType}/${tmdbId}`);
         return null;
     }
-    
+
     // Extract IMDB ID
     let imdbId = null;
     const externalIdsCacheKey = `tmdb-${tmdbType}-${tmdbId}-external_ids.json`;
     let externalIdsData = await getFromCache(externalIdsCacheKey, cacheSubDir);
-    
+
     if (!externalIdsData || process.env.DISABLE_CACHE === 'true') {
-    const TMDB_API_KEY = obtainTmdbKey();
-    const externalIdsApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
+        const TMDB_API_KEY = obtainTmdbKey();
+        const externalIdsApiUrl = `${TMDB_BASE_URL}/${tmdbType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
         console.log(`  [PStream] Fetching TMDB external IDs from: ${externalIdsApiUrl}`);
-        
+
         try {
             const response = await axios.get(externalIdsApiUrl, { timeout: 10000 });
             externalIdsData = response.data;
@@ -3002,21 +3006,21 @@ const getTmdbDataForPStream = async (tmdbType, tmdbId) => {
             console.log(`  [PStream] Error fetching TMDB external IDs: ${error.message}`);
         }
     }
-    
+
     if (externalIdsData && externalIdsData.imdb_id) {
         imdbId = externalIdsData.imdb_id;
     }
-    
+
     if (!imdbId) {
         console.log(`  [PStream] No IMDB ID found for ${tmdbType}/${tmdbId}`);
         return null;
     }
-    
+
     return {
         imdbId: imdbId,
         title: tmdbType === 'movie' ? tmdbData.title : tmdbData.name,
-        year: tmdbData.release_date ? new Date(tmdbData.release_date).getFullYear() : 
-              tmdbData.first_air_date ? new Date(tmdbData.first_air_date).getFullYear() : null
+        year: tmdbData.release_date ? new Date(tmdbData.release_date).getFullYear() :
+            tmdbData.first_air_date ? new Date(tmdbData.first_air_date).getFullYear() : null
     };
 };
 
@@ -3027,20 +3031,20 @@ const getUiTokenForPStream = async (userCookie = null) => {
         console.log('[PStream CookieManager] Using user-provided JWT token as ui-token');
         return userCookie;
     }
-    
+
     // If user provided a regular cookie, try to convert it to JWT format
     if (userCookie && !userCookie.startsWith('eyJ')) {
         console.log('[PStream CookieManager] Regular cookie provided, attempting to use as ui-token');
         // For now, pass it through as-is - the API might handle conversion
         return userCookie;
     }
-    
+
     // Check global cookie
     if (global.currentRequestUserCookie && global.currentRequestUserCookie.startsWith('eyJ')) {
         console.log('[PStream CookieManager] Using JWT token from global state');
         return global.currentRequestUserCookie;
     }
-    
+
     // Try intelligent selection from cookies array if available
     if (global.currentRequestConfig && Array.isArray(global.currentRequestConfig.cookies) && global.currentRequestConfig.cookies.length > 0) {
         try {
@@ -3070,7 +3074,7 @@ const getUiTokenForPStream = async (userCookie = null) => {
             console.warn(`[PStream CookieManager] Multi-cookie selection failed: ${e.message}`);
         }
     }
-    
+
     console.log('[PStream CookieManager] No valid ui-token available');
     return null;
 };

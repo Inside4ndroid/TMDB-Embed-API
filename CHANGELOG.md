@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2025-09-18
+
+### Added
+- New provider: `moviesclub` with registry mapping (`moviesclub.js` → `getMoviesClubStreams`).
+
+### Changed
+- Unified provider stream schema across all providers:
+  ```json
+  { "title": "…", "url": "…", "quality": "…", "provider": "…", "headers": { } }
+  ```
+- Provider integration docs: When adding a provider, also add its exported function to `providerFunctionMap` in `providers/registry.js`.
+- README Docker quick run snippet updated to: `docker run -it -p 8787:8787 inside4ndroid/tmdb-embed-api:latest`.
+
+### Documentation
+- README: Updated Providers section, unified schema example, MoviesClub listed, registry mapping instructions, and badge version.
+
 ## [1.0.3] - 2025-09-17
 
 ### Fixed
@@ -46,6 +62,7 @@ All notable changes to this project will be documented in this file.
 - Initial stable release.
 
 [1.0.3]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.2...v1.0.3
+[1.0.4]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.3...v1.0.4
 [1.0.2]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.0...v1.0.1
 

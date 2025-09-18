@@ -132,12 +132,12 @@ async function getXprimeStreams(title, year, type, seasonNum, episodeNum) {
         Object.entries(item.streams).forEach(([quality, url]) => {
             if (!url || typeof url !== 'string') return;
             streams.push({
+                name: title,
+                title: `${title} - ${type === 'tv' ? `S${String(seasonNum).padStart(2,'0')}E${String(episodeNum).padStart(2,'0')} ` : ''}${quality}`,
                 url,
                 quality: quality || 'Unknown',
-                title: `${title} - ${type === 'tv' ? `S${String(seasonNum).padStart(2,'0')}E${String(episodeNum).padStart(2,'0')} ` : ''}${quality}`,
                 provider: 'Xprime.tv',
-                codecs: [],
-                size: 'Unknown size'
+                headers: {},
             });
         });
     };

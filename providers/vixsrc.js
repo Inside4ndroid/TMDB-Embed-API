@@ -195,7 +195,7 @@ function getVixsrcStreams(tmdbId, mediaType = 'movie', seasonNum = null, episode
                 title: "Auto Quality Stream",
                 url: masterPlaylistUrl,
                 quality: '1080p',
-                type: 'direct',
+                provider: 'Vidsrc',
                 headers: {
                     'Referer': BASE_URL,
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'

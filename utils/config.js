@@ -52,6 +52,19 @@ function writeOverrideFile(obj) {
   }
 }
 
+function getProviderNames() {
+  try {
+    const providersDir = path.join(process.cwd(), 'providers');
+    if (!fs.existsSync(providersDir)) return [];
+    return fs.readdirSync(providersDir)
+      .filter(file => file.endsWith('.js') && file !== 'registry.js' && file !== 'vidsrcextractor.js')
+      .map(file => path.parse(file).name.toLowerCase());
+  } catch (e) {
+    console.warn('[config] Failed to scan providers directory:', e.message);
+    return [];
+  }
+}
+
 function normalizeConfig(base) {
   const cfg = { ...base };
   // Marker: if user explicitly provided an empty array for tmdbApiKeys in override file we should not resurrect legacy key
@@ -80,20 +93,21 @@ function normalizeConfig(base) {
   cfg.tmdbApiKeys = Array.from(new Set(cfg.tmdbApiKeys.map(k=>String(k).trim()).filter(Boolean)));
   // Do not expose legacy single-key field in merged config output
   delete cfg.tmdbApiKey;
-  // Booleans normalization
-  const boolKeys = [
-    'enableShowboxProvider','enableXprimeProvider','enable4khdhubProvider','enableMoviesmodProvider','enableMp4hydraProvider','enableVidzeeProvider','enableVixsrcProvider',
-    'disableCache','enablePStreamApi','disableUrlValidation','disable4khdhubUrlValidation'
-  ];
+  
+  // Dynamic provider enable flags
+  const providerNames = getProviderNames();
+  const boolKeys = providerNames.map(name => `enable${name.charAt(0).toUpperCase() + name.slice(1)}Provider`);
+  boolKeys.push('disableCache', 'enablePStreamApi', 'disableUrlValidation', 'disable4khdhubUrlValidation');
+  
   boolKeys.forEach(k=>{ if (cfg[k] === 'true') cfg[k] = true; else if (cfg[k] === 'false') cfg[k] = false; });
-  // Default values if undefined
-  if (cfg.enableShowboxProvider === undefined) cfg.enableShowboxProvider = true;
-  if (cfg.enableXprimeProvider === undefined) cfg.enableXprimeProvider = true;
-  if (cfg.enable4khdhubProvider === undefined) cfg.enable4khdhubProvider = true;
-  if (cfg.enableMoviesmodProvider === undefined) cfg.enableMoviesmodProvider = true;
-  if (cfg.enableMp4hydraProvider === undefined) cfg.enableMp4hydraProvider = true;
-  if (cfg.enableVidzeeProvider === undefined) cfg.enableVidzeeProvider = true;
-  if (cfg.enableVixsrcProvider === undefined) cfg.enableVixsrcProvider = true;
+  
+  // Set defaults for provider enable flags
+  providerNames.forEach(name => {
+    const flag = `enable${name.charAt(0).toUpperCase() + name.slice(1)}Provider`;
+    if (cfg[flag] === undefined) cfg[flag] = true; // Default to enabled
+  });
+  
+  // Default values for other flags
   if (cfg.disableCache === undefined) cfg.disableCache = false;
   if (cfg.enablePStreamApi === undefined) cfg.enablePStreamApi = true;
   // Proxy features removed; always use direct connections
@@ -114,14 +128,15 @@ function applyConfigToEnv(cfg){
   if (cfg.febboxCookies && cfg.febboxCookies.length) process.env.FEBBOX_COOKIES = cfg.febboxCookies.join(',');
   else delete process.env.FEBBOX_COOKIES;
   if (cfg.defaultRegion) process.env.DEFAULT_REGION = cfg.defaultRegion; else delete process.env.DEFAULT_REGION;
-  // Provider enable flags
-  process.env.ENABLE_SHOWBOX_PROVIDER = cfg.enableShowboxProvider ? 'true':'false';
-  process.env.ENABLE_XPRIME_PROVIDER = cfg.enableXprimeProvider ? 'true':'false';
-  process.env.ENABLE_4KHDHUB_PROVIDER = cfg.enable4khdhubProvider ? 'true':'false';
-  process.env.ENABLE_MOVIESMOD_PROVIDER = cfg.enableMoviesmodProvider ? 'true':'false';
-  process.env.ENABLE_MP4HYDRA_PROVIDER = cfg.enableMp4hydraProvider ? 'true':'false';
-  process.env.ENABLE_VIDZEE_PROVIDER = cfg.enableVidzeeProvider ? 'true':'false';
-  process.env.ENABLE_VIXSRC_PROVIDER = cfg.enableVixsrcProvider ? 'true':'false';
+  
+  // Dynamic provider enable flags
+  const providerNames = getProviderNames();
+  providerNames.forEach(name => {
+    const flag = `enable${name.charAt(0).toUpperCase() + name.slice(1)}Provider`;
+    const envName = `ENABLE_${name.toUpperCase()}_PROVIDER`;
+    process.env[envName] = cfg[flag] ? 'true' : 'false';
+  });
+  
   // Caching / validation / PStream
   process.env.DISABLE_CACHE = cfg.disableCache ? 'true':'false';
   process.env.ENABLE_PSTREAM_API = cfg.enablePStreamApi ? 'true':'false';
@@ -152,13 +167,6 @@ function loadConfig() {
   tmdbApiKeys: parseJsonMaybe(process.env.TMDB_API_KEYS) || null,
     febboxCookies: parseCookies(process.env.FEBBOX_COOKIES),
     // Extended advanced config (may not exist in env)
-  enableShowboxProvider: process.env.ENABLE_SHOWBOX_PROVIDER,
-  enableXprimeProvider: process.env.ENABLE_XPRIME_PROVIDER,
-    enable4khdhubProvider: process.env.ENABLE_4KHDHUB_PROVIDER,
-    enableMoviesmodProvider: process.env.ENABLE_MOVIESMOD_PROVIDER,
-    enableMp4hydraProvider: process.env.ENABLE_MP4HYDRA_PROVIDER,
-    enableVidzeeProvider: process.env.ENABLE_VIDZEE_PROVIDER,
-    enableVixsrcProvider: process.env.ENABLE_VIXSRC_PROVIDER,
     disableCache: process.env.DISABLE_CACHE,
     enablePStreamApi: process.env.ENABLE_PSTREAM_API,
     showboxCacheDir: process.env.SHOWBOX_CACHE_DIR || null,
@@ -166,6 +174,14 @@ function loadConfig() {
     disableUrlValidation: process.env.DISABLE_URL_VALIDATION,
     disable4khdhubUrlValidation: process.env.DISABLE_4KHDHUB_URL_VALIDATION
   };
+  
+  // Dynamic provider enable flags from env
+  const providerNames = getProviderNames();
+  providerNames.forEach(name => {
+    const envName = `ENABLE_${name.toUpperCase()}_PROVIDER`;
+    envCfg[`enable${name.charAt(0).toUpperCase() + name.slice(1)}Provider`] = process.env[envName];
+  });
+  
   const override = readOverrideFile();
   const merged = { ...envCfg, ...override };
   const normalized = normalizeConfig(merged);

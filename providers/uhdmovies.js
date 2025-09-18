@@ -46,9 +46,9 @@ async function getUHDMoviesDomain() {
 
 // Constants
 const { getTmdbApiKey } = require('../utils/tmdbKey');
-function getUhdMoviesKey(){
+function getUhdMoviesKey() {
   const k = getTmdbApiKey();
-  if(!k) console.warn('[UHDMovies] TMDB API key missing; certain metadata features skipped.');
+  if (!k) console.warn('[UHDMovies] TMDB API key missing; certain metadata features skipped.');
   return k;
 }
 
@@ -209,8 +209,8 @@ function extractCleanQuality(fullQualityText) {
   // Fallback: try to extract a shorter version of the original text
   // Look for patterns like "Movie Name (Year) Resolution ..."
   const patterns = [
-  /(\d{3,4}p.*?(?:x264|x265|hevc).*?)[[(]/i,
-  /(\d{3,4}p.*?)[[(]/i,
+    /(\d{3,4}p.*?(?:x264|x265|hevc).*?)[[(]/i,
+    /(\d{3,4}p.*?)[[(]/i,
     /((?:720p|1080p|2160p|4k).*?)$/i
   ];
 
@@ -251,7 +251,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
       // Check if we are entering a new season block
       if (seasonMatch) {
         const currentSeasonNum = parseInt(seasonMatch[1], 10);
-  if (currentSeasonNum === season) {
+        if (currentSeasonNum === season) {
           inTargetSeason = true;
           console.log(`[UHDMovies] Entering Season ${season} block.`);
         } else if (inTargetSeason) {
@@ -298,7 +298,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
             }
           }
         }
-        
+
         // --- ENHANCED: Check for maxbutton-gdrive-episode structure ---
         if ($el.is('p') && $el.find('a.maxbutton-gdrive-episode').length > 0) {
           const episodeRegex = new RegExp(`^Episode\\s+0*${episode}(?!\\d)`, 'i');
@@ -326,24 +326,24 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
 
     if (downloadLinks.length === 0) {
       console.log('[UHDMovies] Main extraction logic failed. Checking if requested season exists on page before fallback.');
-      
+
       // Check if the requested season exists on the page at all
       let seasonExists = false;
       const actualSeasonsOnPage = new Set(); // Track what seasons actually have content
-      
+
       // First pass: Look for actual episode content to see what seasons are available
       $('.entry-content').find('a[href*="tech.unblockedgames.world"], a[href*="tech.examzculture.in"], a.maxbutton-gdrive-episode').each((index, element) => {
         const $el = $(element);
         const linkText = $el.text().trim();
         const episodeText = $el.find('.mb-text').text().trim() || linkText;
-        
+
         // Look for season indicators in episode links
         const seasonMatches = [
           episodeText.match(/S(\d{1,2})/i), // S01, S02, etc.
           episodeText.match(/Season\s+(\d+)/i), // Season 1, Season 2, etc.
           episodeText.match(/S(\d{1,2})E(\d{1,3})/i) // S01E01 format
         ];
-        
+
         for (const match of seasonMatches) {
           if (match && match[1]) {
             const foundSeason = parseInt(match[1], 10);
@@ -351,9 +351,9 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
           }
         }
       });
-      
-      console.log(`[UHDMovies] Actual seasons found on page: ${Array.from(actualSeasonsOnPage).sort((a,b) => a-b).join(', ')}`);
-      
+
+      console.log(`[UHDMovies] Actual seasons found on page: ${Array.from(actualSeasonsOnPage).sort((a, b) => a - b).join(', ')}`);
+
       // Check if requested season is in the actual content
       if (actualSeasonsOnPage.has(season)) {
         seasonExists = true;
@@ -371,7 +371,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
             text.match(/Season\s+\d+\s*[–-]\s*(\d+)/i), // Matches "Season 1-2"
             text.match(/\bS(\d+)/i) // Matches "S2", "S02", etc.
           ];
-          
+
           for (const match of seasonMatches) {
             if (match) {
               const currentSeasonNum = parseInt(match[1], 10);
@@ -397,15 +397,15 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
           }
         });
       }
-      
+
       if (!seasonExists) {
         console.log(`[UHDMovies] Season ${season} not found on page. Available seasons may not include the requested season.`);
         // Don't use fallback if the season doesn't exist to avoid wrong episodes
         return { title: showTitle, links: [], seasonNotFound: true };
       }
-      
+
       console.log(`[UHDMovies] Season ${season} exists on page but episode extraction failed. Trying fallback method with season filtering.`);
-      
+
       // --- ENHANCED FALLBACK LOGIC FOR NEW HTML STRUCTURE ---
       // Try the new maxbutton-gdrive-episode structure first
       $('.entry-content').find('a.maxbutton-gdrive-episode').each((i, el) => {
@@ -417,7 +417,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
           const link = linkElement.attr('href');
           if (link && !downloadLinks.some(item => item.link === link)) {
             let qualityText = 'Unknown Quality';
-            
+
             // Look for quality info in the preceding paragraph or heading
             const parentP = linkElement.closest('p, div');
             const prevElement = parentP.prev();
@@ -437,7 +437,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
               new RegExp(`Season\\s+0*${season}\\b`, 'i'), // Season 1
               new RegExp(`S0*${season}`, 'i')           // S01 anywhere
             ];
-            
+
             const seasonMatch = seasonCheckRegexes.some(regex => regex.test(qualityText));
             if (!seasonMatch) {
               console.log(`[UHDMovies] Skipping episode from different season: Quality='${qualityText}'`);
@@ -454,7 +454,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
           }
         }
       });
-      
+
       // If still no results, try the original fallback logic
       if (downloadLinks.length === 0) {
         console.log(`[UHDMovies] Enhanced fallback failed, trying original fallback logic.`);
@@ -484,7 +484,7 @@ async function extractTvShowDownloadLinks(showPageUrl, season, episode) {
                 new RegExp(`Season\\s+0*${season}\\b`, 'i'), // Season 1
                 new RegExp(`S0*${season}`, 'i')           // S01 anywhere
               ];
-              
+
               const seasonMatch = seasonCheckRegexes.some(regex => regex.test(qualityText));
               if (!seasonMatch) {
                 console.log(`[UHDMovies] Skipping episode from different season: Quality='${qualityText}'`);
@@ -822,7 +822,7 @@ async function validateVideoUrl(url, timeout = 10000) {
 
   try {
     console.log(`[UHDMovies] Validating URL: ${url.substring(0, 100)}...`);
-    
+
     const response = await axiosInstance.head(url, {
       timeout,
       headers: {
@@ -951,7 +951,7 @@ function scoreResult(title, requestedSeason = null) {
         console.log(`[UHDMovies] Season range bonus (+50): ${startSeason}-${endSeason} includes requested season ${requestedSeason}`);
       }
     }
-    
+
     // Check for specific season mentions
     const specificSeasonMatch = lowerTitle.match(/season\s+(\d+)/i);
     if (specificSeasonMatch) {
@@ -964,7 +964,7 @@ function scoreResult(title, requestedSeason = null) {
         console.log(`[UHDMovies] Season penalty (-20): Season ${mentionedSeason} is older than requested season ${requestedSeason}`);
       }
     }
-    
+
     // Check for "Season X Added" or similar indicators
     if (lowerTitle.includes('season') && lowerTitle.includes('added')) {
       const addedSeasonMatch = lowerTitle.match(/season\s+(\d+)\s+added/i);
@@ -1030,7 +1030,7 @@ const getCookiesForUrl = async (jar, url) => {
 // Helper function to create a session for SID resolution
 const createSession = async (jar) => {
   const { wrapper } = await getAxiosCookieJarSupport();
-  
+
   const sessionConfig = {
     jar,
     headers: {
@@ -1044,7 +1044,7 @@ const createSession = async (jar) => {
 
   const session = wrapper(axios.create(sessionConfig));
 
-  
+
 
   return session;
 };
@@ -1178,8 +1178,8 @@ async function getUHDMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
       }
       console.log(`[UHDMovies] Cache MISS for ${cacheKey}. Fetching from source.`);
       // 2. If cache miss, get TMDB info to perform search
-  const TMDB_API_KEY_UHDMOVIES = getUhdMoviesKey();
-  const tmdbUrl = `https://api.themoviedb.org/3/${mediaType === 'tv' ? 'tv' : 'movie'}/${tmdbId}?api_key=${TMDB_API_KEY_UHDMOVIES}`;
+      const TMDB_API_KEY_UHDMOVIES = getUhdMoviesKey();
+      const tmdbUrl = `https://api.themoviedb.org/3/${mediaType === 'tv' ? 'tv' : 'movie'}/${tmdbId}?api_key=${TMDB_API_KEY_UHDMOVIES}`;
       const tmdbResponse = await axios.get(tmdbUrl);
       const tmdbData = tmdbResponse.data;
       const mediaInfo = {
@@ -1249,25 +1249,25 @@ async function getUHDMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
 
       // 5. Extract SID links from the movie/show page
       let downloadInfo = await (mediaType === 'tv' ? extractTvShowDownloadLinks(matchingResult.link, season, episode) : extractDownloadLinks(matchingResult.link, mediaInfo.year));
-      
+
       // Check if season was not found or episode extraction failed, and we have multiple results to try
-      if (downloadInfo.links.length === 0 && matchingResults.length > 1 && scoredResults && 
-          (downloadInfo.seasonNotFound || (mediaType === 'tv' && downloadInfo.title))) {
+      if (downloadInfo.links.length === 0 && matchingResults.length > 1 && scoredResults &&
+        (downloadInfo.seasonNotFound || (mediaType === 'tv' && downloadInfo.title))) {
         console.log(`[UHDMovies] Season ${season} not found or episode extraction failed on best match. Trying next best match...`);
-        
+
         // Try the next best match
         const nextBestMatch = scoredResults[1];
         console.log(`[UHDMovies] Trying next best match: "${nextBestMatch.title}"`);
-        
+
         downloadInfo = await (mediaType === 'tv' ? extractTvShowDownloadLinks(nextBestMatch.link, season, episode) : extractDownloadLinks(nextBestMatch.link, mediaInfo.year));
-        
+
         if (downloadInfo.links.length > 0) {
           console.log(`[UHDMovies] Successfully found links on next best match!`);
         } else {
           console.log(`[UHDMovies] Next best match also failed. No download links found.`);
         }
       }
-      
+
       if (downloadInfo.links.length === 0) {
         console.log('[UHDMovies] No download links found on page.');
         // Don't cache empty results to allow retrying later
@@ -1380,11 +1380,8 @@ async function getUHDMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
                   title: `${cleanFileName}\n${sizeInfo}`,
                   url: finalUrl,
                   quality: linkInfo.quality,
-                  size: sizeInfo,
-                  fileName: fileName,
-                  fullTitle: rawQuality,
-                  codecs: codecs,
-                  behaviorHints: { bingeGroup: `uhdmovies-${linkInfo.quality}` }
+                  provider: 'uhdmovies',
+                  headers: {}
                 };
               }
             }

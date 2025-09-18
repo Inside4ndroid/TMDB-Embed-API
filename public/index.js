@@ -596,15 +596,25 @@ async function renderProviderMatrix(merged){
 	if(!merged){ try { const data = await fetchConfig(); merged = data.merged||{}; } catch { return; } }
 	const container = document.getElementById('providerMatrix'); if(!container) return;
 	const defaults = (merged.defaultProviders||[]).map(s=>s.toLowerCase());
-	const providers = [
-		['showbox','enableShowboxProvider'],
-		['4khdhub','enable4khdhubProvider'],
-		['moviesmod','enableMoviesmodProvider'],
-		['mp4hydra','enableMp4hydraProvider'],
-		['vidzee','enableVidzeeProvider'],
-		['vixsrc','enableVixsrcProvider'],
-		['xprime','enableXprimeProvider']
-	];
+	
+	// Fetch available providers from API
+	let availableProviders = [];
+	try {
+		const providersResponse = await fetch('/api/providers');
+		if (providersResponse.ok) {
+			const providersData = await providersResponse.json();
+			availableProviders = providersData.providers || [];
+		}
+	} catch (e) {
+		console.warn('Failed to fetch providers list:', e.message);
+	}
+	
+	// Create provider list with enable flags
+	const providers = availableProviders.map(p => {
+		const flag = `enable${p.name.charAt(0).toUpperCase() + p.name.slice(1)}Provider`;
+		return [p.name, flag];
+	});
+	
 	container.innerHTML = providers.map(([name,flag])=>{
 		const enabled = merged[flag] !== false;
 		const isDefault = defaults.includes(name);
