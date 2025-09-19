@@ -309,7 +309,15 @@ async function handleSingleServer(embedUrl, mediaType, season, episode, tmdbId) 
         title: playerConfig.title || `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - MoviesClub`,
         url: playerConfig.file,
         quality: extractQualityFromUrl(playerConfig.file) || '720p',
-        headers: {}
+        headers: (() => {
+          if (playerConfig.file.includes('vidora.stream')) {
+            return {
+              Origin: 'https://vidora.stream',
+              Referer: 'https://vidora.stream/'
+            };
+          }
+          return {};
+        })()
       };
 
       // Add poster if available
@@ -384,7 +392,7 @@ function extractStreamsFromServer(serverData, serverName, mediaType, season, epi
             title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - ${serverName}`,
             url: serverData,
             quality: extractQualityFromUrl(serverData) || '720p',
-            headers: {}
+            headers: serverData.includes('vidora.stream') ? { Origin: 'https://vidora.stream', Referer: 'https://vidora.stream/' } : {}
           };
           streams.push(stream);
         }
@@ -406,7 +414,7 @@ function extractStreamsFromServer(serverData, serverName, mediaType, season, epi
             title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - ${serverName}`,
             url: serverData[key],
             quality: extractQualityFromUrl(serverData[key]) || '720p',
-            headers: {}
+            headers: serverData[key].includes('vidora.stream') ? { Origin: 'https://vidora.stream', Referer: 'https://vidora.stream/' } : {}
           };
 
           // Add poster if available

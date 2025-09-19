@@ -9,6 +9,9 @@ const path = require('path');
 const DOMAINS_URL = 'https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json';
 let cachedDomains = null;
 
+// Permanent policy: block r2.dev links (previously optional via env flag)
+console.log('[4KHDHub] r2.dev links will be removed (permanent policy)');
+
 // --- Caching Configuration ---
 const CACHE_ENABLED = process.env.DISABLE_CACHE !== 'true';
 console.log(`[4KHDHub] Internal cache is ${CACHE_ENABLED ? 'enabled' : 'disabled'}.`);
@@ -61,8 +64,7 @@ function validateUrl(url) {
 
             // Skip validation for known reliable hosting services
             const trustedHosts = [
-                'pixeldrain.dev',
-                'r2.dev'
+                'pixeldrain.dev'
             ];
 
             const isTrustedHost = trustedHosts.some(host => urlObj.hostname.includes(host));
@@ -74,11 +76,21 @@ function validateUrl(url) {
 
             const protocol = urlObj.protocol === 'https:' ? https : http;
 
+            // Add referer/origin for r2.dev validation attempts
+            const extraHeaders = {};
+            if (/r2\.dev$/i.test(urlObj.hostname)) {
+                const origin = `${urlObj.protocol}//${urlObj.hostname}`;
+                extraHeaders['Referer'] = origin + '/';
+                extraHeaders['Origin'] = origin;
+                console.log(`[4KHDHub] Adding Referer/Origin headers for validation of r2.dev URL: ${url}`);
+            }
+
             const options = {
                 method: 'HEAD',
                 timeout: 15000,
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    ...extraHeaders
                 }
             };
 
@@ -751,6 +763,14 @@ function extractHubCloudLinks(url, referer) {
                                 if (displayFilename) titleParts.push(displayFilename);
                                 if (size) titleParts.push(size);
                                 const finalTitle = titleParts.join('\n');
+                                let headers = {};
+                                try {
+                                    const host = new URL(link).hostname;
+                                    if (/r2\.dev$/i.test(host)) {
+                                        headers = { Referer: baseUrl + '/', Origin: baseUrl };
+                                        console.log('[4KHDHub] Added Referer/Origin headers for r2.dev FSL link');
+                                    }
+                                } catch {}
 
                                 resolve({
                                     name: `4KHDHub - FSL Server${qualityLabel}`,
@@ -758,7 +778,7 @@ function extractHubCloudLinks(url, referer) {
                                     url: link,
                                     quality: quality,
                                     provider: '4khdhub',
-                                    headers: {}
+                                    headers
                                 });
                             })
                             .catch(() => {
@@ -767,6 +787,14 @@ function extractHubCloudLinks(url, referer) {
                                 if (displayFilename) titleParts.push(displayFilename);
                                 if (size) titleParts.push(size);
                                 const finalTitle = titleParts.join('\n');
+                                let headers = {};
+                                try {
+                                    const host = new URL(link).hostname;
+                                    if (/r2\.dev$/i.test(host)) {
+                                        headers = { Referer: baseUrl + '/', Origin: baseUrl };
+                                        console.log('[4KHDHub] Added Referer/Origin headers for r2.dev FSL link (fallback)');
+                                    }
+                                } catch {}
 
                                 resolve({
                                     name: `4KHDHub - FSL Server${qualityLabel}`,
@@ -774,7 +802,7 @@ function extractHubCloudLinks(url, referer) {
                                     url: link,
                                     quality: quality,
                                     provider: '4khdhub',
-                                    headers: {}
+                                    headers
                                 });
                             });
                     } else if (text.includes('Download File')) {
@@ -1306,12 +1334,22 @@ function extractStreamingLinks(downloadLinks) {
         .then(results => {
             const validResults = results.filter(result => result !== null);
             const flatResults = validResults.flat();
-            // Filter out .zip files
-            const filteredResults = flatResults.filter(link => {
-                return link && link.url && !link.url.toLowerCase().endsWith('.zip');
-            });
+            // Keep .zip links but strip the trailing .zip extension (attempt direct file URL)
+            const transformedResults = flatResults
+                .filter(link => link && link.url)
+                .map(link => {
+                    try {
+                        const lower = link.url.toLowerCase();
+                        if (lower.endsWith('.zip')) {
+                            const newUrl = link.url.slice(0, -4); // remove .zip
+                            console.log(`[4KHDHub] Converted zip URL to non-zip: ${link.url} -> ${newUrl}`);
+                            return { ...link, url: newUrl };
+                        }
+                    } catch {}
+                    return link;
+                });
             // Note: Link count will be logged after validation completes
-            return filteredResults;
+            return transformedResults;
         });
 }
 
@@ -1778,7 +1816,7 @@ async function get4KHDHubStreams(tmdbId, type, season = null, episode = null) {
         }
 
         // Normalize to generic stream object format
-        const streams = validatedLinks.map(link => ({
+        let streams = validatedLinks.map(link => ({
             name: link.name, // Don't add prefix since it's already included
             title: link.title || link.name,
             url: link.url,
@@ -1786,6 +1824,28 @@ async function get4KHDHubStreams(tmdbId, type, season = null, episode = null) {
             provider: "4khdhub",
             headers: {}
         }));
+
+        // Always remove r2.dev links
+        {
+            const before = streams.length;
+            streams = streams.filter(s => {
+                try { return !new URL(s.url).hostname.endsWith('r2.dev'); } catch { return true; }
+            });
+            const removed = before - streams.length;
+            if (removed > 0) console.log(`[4KHDHub] Removed ${removed} r2.dev streams (permanent policy)`);
+        }
+
+        // Host distribution instrumentation
+        try {
+            const hostCounts = streams.reduce((acc, s) => {
+                try {
+                    const h = new URL(s.url).hostname;
+                    acc[h] = (acc[h] || 0) + 1;
+                } catch {}
+                return acc;
+            }, {});
+            console.log('[4KHDHub] Final host distribution:', hostCounts);
+        } catch {}
 
         console.log(`[4KHDHub] Returning ${streams.length} streams`);
         return streams;

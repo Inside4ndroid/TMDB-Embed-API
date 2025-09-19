@@ -2,21 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.4] - 2025-09-18
+## [1.0.5] - 2025-09-19
 
-### Added
-- New provider: `moviesclub` with registry mapping (`moviesclub.js` → `getMoviesClubStreams`).
+### Improved
+- 4khdhub provider: Permanently block `r2.dev` FSL links (previous optional flag removed).
+- Added Referer/Origin headers automatically for FSL Server links during validation (prior to block enforcement ensured proper behavior).
+- Tightened URL validation: removed unconditional trust for `r2.dev`; validation logic now consistent across hosts.
+- Host distribution instrumentation logs final hostname counts for easier diagnostics.
+- Preserved HubCloud worker `.zip` links by stripping the `.zip` extension instead of discarding them (enables direct playback attempts).
+- MoviesClub provider: Added automatic `Origin`/`Referer` headers for `vidora.stream` sources to prevent 403 responses.
 
-### Changed
-- Unified provider stream schema across all providers:
-  ```json
-  { "title": "…", "url": "…", "quality": "…", "provider": "…", "headers": { } }
-  ```
-- Provider integration docs: When adding a provider, also add its exported function to `providerFunctionMap` in `providers/registry.js`.
-- README Docker quick run snippet updated to: `docker run -it -p 8787:8787 inside4ndroid/tmdb-embed-api:latest`.
+### Notes
+- `r2.dev` links are always removed from final output; no env flag required.
 
 ### Documentation
 - README: Updated Providers section, unified schema example, MoviesClub listed, registry mapping instructions, and badge version.
+
+## [1.0.4] - 2025-09-18
+
+### Added
+
+### Changed
+  ```json
+  { "title": "…", "url": "…", "quality": "…", "provider": "…", "headers": { } }
+  ```
 
 ## [1.0.3] - 2025-09-17
 
