@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=flat" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Version-1.0.5-informational?style=flat" />
+  <img src="https://img.shields.io/badge/Version-1.0.6-informational?style=flat" />
   <img src="https://img.shields.io/docker/pulls/inside4ndroid/tmdb-embed-api?label=Docker%20Pulls&style=flat" />
 </p>
 
@@ -34,7 +34,7 @@
 
 ## ✨ Features
 - **Multi‑TMDB Key Rotation** – Supply multiple API keys; one is chosen randomly per request.
-- **Provider Aggregation** – Pluggable providers (Showbox, 4khdhub, MoviesMod, MP4Hydra, VidZee, Vixsrc, Xprime, MoviesClub) with per‑provider enable toggles + default selection.
+- **Provider Aggregation** – Pluggable providers (Showbox, 4khdhub, MoviesMod, MP4Hydra, VidZee, Vixsrc, UHDMovies) with per‑provider enable toggles + default selection.
 - **🔥 Plugin System** – Drop new provider files in `providers/` and add its exported function to the registry map (`providers/registry.js` → `providerFunctionMap`).
 - **Dynamic Filtering** – Minimum quality presets, custom JSON quality map, codec exclusion rules (presets + JSON).
 - **Runtime Overrides UI** – Fully interactive web admin at `/` (login protected) writing to `utils/user-config.json`.
@@ -43,6 +43,23 @@
 - **Config Propagation** – Overrides mirrored to `process.env` for legacy compatibility (no `.env` required after first save).
 - **Back‑Navigation Safe** – Cache-control + visibility/session revalidation.
 - **Extensible** – Simple drop-in provider plugin system.
+- **Optional Stream Proxy Layer** – When enabled, rewrites returned stream URLs so HLS playlists, TS segments, and subtitles are served through internal endpoints (`/m3u8-proxy`, `/ts-proxy`, `/sub-proxy`) allowing uniform headers, origin shielding, and optional segment caching.
+  When active the API omits per-stream `headers` objects from responses (they're no longer needed by clients) to avoid leaking upstream header requirements.
+
+  Proxy Tuning Parameters (query flags accepted by `/ts-proxy` – defaults shown):
+  - `clampOpen` (on) – If a client sends an ambiguous `Range: bytes=0-`, constrain it to an initial window of `openChunkKB` (default 4096 KB) to avoid huge first reads.
+  - `openChunkKB=4096` – Size (KB) used for both clamp window and each progressive expansion increment.
+  - `progressiveOpen` (on) – Grow successive ambiguous head requests (`bytes=0-`) incrementally instead of one large span. Maintains a per‑URL expansion map.
+  - `initChunkKB=512` – Size used for a synthetic initial partial (206) when no client range is provided and progressive growth is disabled. Capped 64–2048 KB.
+  - `noSynth=1` – Disable synthetic initial partial generation (forces pass‑through behavior).
+  - `force200=1` – Normalize upstream 206 responses to 200 (diagnostics / edge player testing).
+  - `tailPrefetch` (on) – Enable asynchronous tail fetch of the file’s last bytes to satisfy rapid player tail probes.
+  - `tailPrefetchKB=256` – Tail window size (64–2048 KB). Cached in memory with TTL cleanup.
+  Behavior Notes:
+  - Synthetic partials auto‑disable when `progressiveOpen` is active (real progressive ranges preferred).
+  - Player tail probes (e.g., VLC metadata scans) are accelerated by the cached tail window.
+  - Forced 200 mode strips `Content-Range` to emulate full responses for troubleshooting.
+  - Host Overrides: `pixeldrain.*` and `video-downloads.googleusercontent.com` URLs are routed through `/ts-proxy` regardless of extension to ensure correct range + MIME handling.
 
 ---
 
@@ -217,9 +234,8 @@ The API supports a plugin system. Drop a new provider file in the `providers/` f
 - `mp4hydra` - MP4Hydra streams
 - `vidzee` - VidZee streams
 - `vixsrc` - Vixsrc streams
-- `xprime` - Xprime streams
 - `uhdmovies` - UHD Movies streams
-- `moviesclub` - MoviesClub streams
+
 
 ### Adding a New Provider
 1. **Create** `providers/yourprovider.js` with your stream fetching logic
@@ -234,9 +250,7 @@ The API supports a plugin system. Drop a new provider file in the `providers/` f
      'MP4Hydra.js': 'getMP4HydraStreams',
      'VidZee.js': 'getVidZeeStreams',
      'vixsrc.js': 'getVixsrcStreams',
-     'xprime.js': 'getXprimeStreams',
-     'uhdmovies.js': 'getUHDMoviesStreams',
-     'moviesclub.js': 'getMoviesClubStreams',
+  'uhdmovies.js': 'getUHDMoviesStreams',
      'yourprovider.js': 'getYourproviderStreams'
    };
    ```
@@ -298,6 +312,21 @@ Aggregate endpoint auto-resolves IMDb when needed and merges provider output bef
 ```
 
 Filtering passes through `applyFilters` to enforce min quality + codec exclusions.
+
+> Note: When the `enableProxy` flag is turned on, provider-specific request headers are stripped from each stream object before responding. Clients should use the proxied URL directly without adding custom Referer/Origin headers.
+
+---
+
+## ⚙️ Configuration Flags (Advanced Panel)
+| Flag | Default | Purpose |
+|------|---------|---------|
+| disableCache | false | Disables internal caches (Showbox + proxy segment cache) |
+| enablePStreamApi | true | Enables Showbox PStream-specific handling |
+| disableUrlValidation | false | Skip general URL pattern validation checks |
+| disable4khdhubUrlValidation | false | Skip 4khdhub-specific URL validation |
+| enableProxy | false | Mounts proxy routes and rewrites stream URLs through them |
+
+Toggle `enableProxy` to activate the internal proxy. This adds lightweight playlist/segment/subtitle rewriting without modifying provider code. Disable it to return direct upstream URLs.
 
 ---
 

@@ -113,6 +113,11 @@ function normalizeConfig(base) {
   // Proxy features removed; always use direct connections
   if (cfg.disableUrlValidation === undefined) cfg.disableUrlValidation = false;
   if (cfg.disable4khdhubUrlValidation === undefined) cfg.disable4khdhubUrlValidation = false;
+  // MoviesClub optional proxy base (string URL with trailing ?destination= or similar)
+  if (cfg.moviesclubProxy !== undefined && typeof cfg.moviesclubProxy === 'string') {
+    cfg.moviesclubProxy = cfg.moviesclubProxy.trim();
+    if (!cfg.moviesclubProxy) delete cfg.moviesclubProxy;
+  }
   return cfg;
 }
 
@@ -152,6 +157,8 @@ function applyConfigToEnv(cfg){
   delete process.env.VIDZEE_PROXY_URL;
   delete process.env.VIDSRC_PROXY_URL;
   delete process.env.MOVIESMOD_PROXY_URL;
+  // Mirror moviesclub proxy for potential legacy usage
+  if (cfg.moviesclubProxy) process.env.MOVIESCLUB_PROXY_URL = cfg.moviesclubProxy; else delete process.env.MOVIESCLUB_PROXY_URL;
   if (cfg.defaultRegion) process.env.FEBBOX_REGION = cfg.defaultRegion; // alias
 }
 

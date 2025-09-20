@@ -174,6 +174,7 @@ function fillForm(data){
 	advBools.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const src = (override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]); if(el.type==='checkbox'){ el.checked = !!src; } else { el.value = src? 'true':''; } });
 	const advTexts = [
 	['showboxCacheDir','adv_showboxCacheDir']
+	,['moviesclubProxy','adv_moviesclubProxy']
 	];
 	advTexts.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const val = override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]; el.value = val || ''; });
 	// Sync checkbox style advanced flags
@@ -257,6 +258,7 @@ async function save(){
 	};
 	Object.entries(boolMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(el) payload[cfgKey] = !!el.checked; });
 	const textMap = { adv_showboxCacheDir:'showboxCacheDir' };
+	textMap.adv_moviesclubProxy = 'moviesclubProxy';
 	Object.entries(textMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(!el) return; const v = el.value.trim(); payload[cfgKey] = v? v : null; });
 	const tmdbHidden = f.elements['tmdbApiKeysHidden'];
 	if (tmdbHidden){

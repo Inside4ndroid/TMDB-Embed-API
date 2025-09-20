@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.6] - 2025-09-20
+
+### Removed
+- MoviesClub provider (multi-server scraping complexities & Turnstile challenge; deprecated permanently)
+- Xprime provider (upstream Xprime.tv offline due to security changes)
+ - 4khdhub provider: all `.zip` archive links are now omitted entirely (previous releases experimented with stripping the extension which produced non‑playable pseudo‑MKV links)
+
+### Added
+- Structured multi-server debug instrumentation (session summaries, per-fetch metrics, pattern counters)
+- Turnstile challenge detection & bypass attempt scaffold (synthetic `/rcp_verify` token posting)
+- Optional internal stream proxy (`enableProxy` flag): mounts `/m3u8-proxy`, `/ts-proxy`, `/sub-proxy` with playlist + segment + subtitle handling and segment prefetch cache.
+ - Proxy range management features:
+   - `clampOpen` (default on) – caps ambiguous open‑ended `bytes=0-` requests to a bounded initial window (`openChunkKB`, default 4096 KB)
+   - `progressiveOpen` (default on) – incremental expansion of the head range on successive `bytes=0-` requests instead of a single huge span
+   - `initChunkKB` (default 512 KB) – size of the synthetic initial 206 response when neither clamp/progressive produce a range and `noSynth` is not set
+   - `tailPrefetch` (default on) + `tailPrefetchKB` (default 256 KB) – asynchronous fetch & in‑memory cache of the file tail to satisfy rapid VLC tail probes
+   - `force200` (opt‑in) – normalizes upstream 206 responses to 200 for diagnostics
+   - `noSynth` (opt‑in) – disables synthetic initial partial response generation
+ - Tail prefetch TTL cleanup task (30 min window) and in‑memory maps for: segment cache, open range clamp, progressive growth, and tail buffers
+ - Host routing overrides: `pixeldrain.*` & `video-downloads.googleusercontent.com` are forced through `/ts-proxy` (extensionless or ambiguous content)
+
+### Changed
+- Centralized multi-server request headers with realistic `sec-ch-ua*` & `Sec-Fetch-*` values
+- Added retry, rotating User-Agent, and cookie jar logic to multi-server fetch pipeline
+- Showbox provider priority map updated after Xprime removal
+- README/Docs trimmed to reflect current active providers only
+- When `enableProxy` is active, stream response objects have their original `headers` field removed (proxy handles all required headers internally).
+ - 4khdhub provider now filters out archive endpoints instead of attempting extension normalization (prevents feeding ZIP files to players)
+ - Open‑ended range handling improved to reduce VLC negotiation loops by throttling first‑pass read size and growing progressively
+ - Synthetic initial partial response is automatically suppressed when `progressiveOpen` is active (real range growth preferred)
+
+### Fixed
+- Ensured multi-server fallback attempts (direct rcp player/m3u8 extraction) operate with improved diagnostics
+ - Eliminated repeated VLC tail probe stalls caused by archive masquerading as video content (root cause was filtered by dropping `.zip` URLs)
+
+### Documentation
+ - Updated README version badge to 1.0.6 and provider list (removed MoviesClub & Xprime, clarified active providers list)
+ - Added proxy tuning parameter reference (clamp/progressive/tail prefetch, synthetic partial, force200) and host override notes
+ - Expanded explanation that per‑stream headers are stripped when proxying is enabled
+
+
 ## [1.0.5] - 2025-09-19
 
 ### Improved
@@ -10,13 +51,11 @@ All notable changes to this project will be documented in this file.
 - Tightened URL validation: removed unconditional trust for `r2.dev`; validation logic now consistent across hosts.
 - Host distribution instrumentation logs final hostname counts for easier diagnostics.
 - Preserved HubCloud worker `.zip` links by stripping the `.zip` extension instead of discarding them (enables direct playback attempts).
-- MoviesClub provider: Added automatic `Origin`/`Referer` headers for `vidora.stream` sources to prevent 403 responses.
 
 ### Notes
 - `r2.dev` links are always removed from final output; no env flag required.
 
 ### Documentation
-- README: Updated Providers section, unified schema example, MoviesClub listed, registry mapping instructions, and badge version.
 
 ## [1.0.4] - 2025-09-18
 
@@ -70,6 +109,8 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] - 2025-09-16
 - Initial stable release.
 
+[1.0.6]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.4...v1.0.5
 [1.0.3]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.2...v1.0.3
 [1.0.4]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.3...v1.0.4
 [1.0.2]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.1...v1.0.2

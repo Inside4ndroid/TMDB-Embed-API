@@ -3,6 +3,19 @@
 
 const axios = require('axios');
 const JsUnpacker = require('../utils/jsunpack');
+const { config } = require('../utils/config');
+
+function applyMoviesClubProxy(url) {
+  try {
+    const base = config.moviesclubProxy;
+    if (!base || typeof base !== 'string') return url;
+    // Ensure base ends with either = or a delimiter allowing raw append
+    const proxied = base + encodeURIComponent(url);
+    return proxied;
+  } catch {
+    return url;
+  }
+}
 
 async function getMoviesClubStreams(tmdbId, mediaType, season, episode) {
   console.log(`[moviesclub] Fetching streams for ${mediaType} tmdbId=${tmdbId} season=${season} episode=${episode}`);
@@ -52,7 +65,7 @@ async function getMoviesClubStreams(tmdbId, mediaType, season, episode) {
     // Check if this is a cdn.moviesapi.club embed URL with multiple servers
     if (embedUrl.includes('cdn.moviesapi.club')) {
       console.log('[moviesclub] Detected cdn.moviesapi.club embed URL, handling multiple servers');
-      return await handleMultipleServers(embedUrl, mediaType, season, episode, tmdbId);
+      return null;
     }
 
     // Handle regular embed URLs (existing logic)
@@ -104,11 +117,12 @@ async function handleMultipleServers(embedUrl, mediaType, season, episode, tmdbI
 
           // If it's a URL, use it directly
           if (decodedSrc.startsWith('http')) {
+            const rawUrl = decodedSrc;
             const stream = {
               name: `MoviesClub - Direct Stream`,
               title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - MoviesClub Direct`,
-              url: decodedSrc,
-              quality: extractQualityFromUrl(decodedSrc) || '720p'
+              url: applyMoviesClubProxy(rawUrl),
+              quality: extractQualityFromUrl(rawUrl) || '720p'
             };
             streams.push(stream);
             console.log(`[moviesclub] Added direct stream from iframe`);
@@ -209,11 +223,12 @@ async function handleMultipleServers(embedUrl, mediaType, season, episode, tmdbI
         console.log(`[moviesclub] Extracted stream URL: ${streamUrl.substring(0, 100)}...`);
 
         // Create stream object
+        const rawUrl = streamUrl;
         const stream = {
           name: `MoviesClub - ${serverName}`,
           title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - ${serverName}`,
-          url: streamUrl,
-          quality: extractQualityFromUrl(streamUrl) || '720p',
+          url: applyMoviesClubProxy(rawUrl),
+          quality: extractQualityFromUrl(rawUrl) || '720p',
           headers: {}
         };
 
@@ -304,20 +319,17 @@ async function handleSingleServer(embedUrl, mediaType, season, episode, tmdbId) 
 
     // Extract streams from the configuration
     if (playerConfig.file) {
+      const rawUrl = playerConfig.file;
       const stream = {
         name: `MoviesClub - ${playerConfig.title || 'Server 1'}`,
         title: playerConfig.title || `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - MoviesClub`,
-        url: playerConfig.file,
-        quality: extractQualityFromUrl(playerConfig.file) || '720p',
-        headers: (() => {
-          if (playerConfig.file.includes('vidora.stream')) {
-            return {
-              Origin: 'https://vidora.stream',
-              Referer: 'https://vidora.stream/'
-            };
-          }
-          return {};
-        })()
+        url: applyMoviesClubProxy(rawUrl),
+        quality: extractQualityFromUrl(rawUrl) || '720p',
+        // Always include vidora headers for single-server results to prevent 403 playback issues
+        headers: {
+          Origin: 'https://vidora.stream',
+          Referer: 'https://vidora.stream/'
+        }
       };
 
       // Add poster if available
@@ -387,11 +399,12 @@ function extractStreamsFromServer(serverData, serverName, mediaType, season, epi
         console.log(`[moviesclub] Server response is not JSON, treating as direct URL: ${serverData.substring(0, 100)}`);
         // Treat as direct stream URL
         if (serverData.startsWith('http')) {
+          const rawUrl = serverData;
           const stream = {
             name: `MoviesClub - ${serverName}`,
             title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - ${serverName}`,
-            url: serverData,
-            quality: extractQualityFromUrl(serverData) || '720p',
+            url: applyMoviesClubProxy(rawUrl),
+            quality: extractQualityFromUrl(rawUrl) || '720p',
             headers: serverData.includes('vidora.stream') ? { Origin: 'https://vidora.stream', Referer: 'https://vidora.stream/' } : {}
           };
           streams.push(stream);
@@ -409,12 +422,13 @@ function extractStreamsFromServer(serverData, serverName, mediaType, season, epi
         if (serverData[key] && typeof serverData[key] === 'string' && serverData[key].startsWith('http')) {
           console.log(`[moviesclub] Found stream URL in key '${key}': ${serverData[key].substring(0, 100)}`);
 
+          const rawUrl = serverData[key];
           const stream = {
             name: `MoviesClub - ${serverName}`,
             title: `${mediaType === 'movie' ? 'Movie' : `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`} ${tmdbId} - ${serverName}`,
-            url: serverData[key],
-            quality: extractQualityFromUrl(serverData[key]) || '720p',
-            headers: serverData[key].includes('vidora.stream') ? { Origin: 'https://vidora.stream', Referer: 'https://vidora.stream/' } : {}
+            url: applyMoviesClubProxy(rawUrl),
+            quality: extractQualityFromUrl(rawUrl) || '720p',
+            headers: rawUrl.includes('vidora.stream') ? { Origin: 'https://vidora.stream', Referer: 'https://vidora.stream/' } : {}
           };
 
           // Add poster if available
