@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.7] - 2025-09-21
+
+### Added
+- VidZee provider: definitive AES-256-CBC decoder (replaced heuristic token attempts). Decodes newly obfuscated `atob(token) => ivBase64:cipherBase64` structure using padded key `qrincywincyspider` and PKCS7.
+- Tail segment acceleration: internal tail prefetch map (`tailPrefetchMap`) with TTL cleanup and configurable `tailPrefetchKB` (default 256 KB) now documented and instrumented.
+
+### Changed
+- Proxy range negotiation: clarified interaction between `progressiveOpen` and synthetic initial partial (auto-suppression when progressive active). Additional debug logging around tail cache hits and forced host overrides.
+- VidZee streams now always return direct decrypted URLs (per-stream `originalToken` retained for debugging when `VIDZEE_DEBUG=1`).
+- Updated README version badge to 1.0.7.
+
+### Fixed
+- Eliminated edge cases where encoded VidZee tokens were leaking through without decoding.
+- Reduced VLC initial loop behavior via tail prefetch serving last-byte probes from cache faster (combined with earlier 1.0.6 range logic).
+
+### Documentation
+- README: implicit improvements carried forward (no separate section required) plus badge bump.
+- CHANGELOG: recorded AES decoder details & tail prefetch instrumentation.
+
+### Notes
+- Future proxy tuning items (size meta map, dynamic progressive growth) tracked but not part of this release.
+
+
 ## [1.0.6] - 2025-09-20
 
 ### Removed
@@ -109,6 +132,7 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] - 2025-09-16
 - Initial stable release.
 
+[1.0.7]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.4...v1.0.5
 [1.0.3]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.2...v1.0.3
