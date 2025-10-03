@@ -2679,10 +2679,9 @@ const sortStreamsByQuality = (streams) => {
 
     // Provider priority ordering (lower number = higher priority)
     const providerSortKeys = {
-        'ShowBox': 1,
-        'Xprime.tv': 2,
-        'HollyMovieHD': 3,
-        'Soaper TV': 4,
+    'ShowBox': 1,
+    'HollyMovieHD': 2,
+    'Soaper TV': 3,
         // Default for unknown providers
         default: 99
     };

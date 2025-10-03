@@ -770,7 +770,9 @@ function extractHubCloudLinks(url, referer) {
                                         headers = { Referer: baseUrl + '/', Origin: baseUrl };
                                         console.log('[4KHDHub] Added Referer/Origin headers for r2.dev FSL link');
                                     }
-                                } catch {}
+                                } catch {
+                                    // Ignore URL parsing errors
+                                }
 
                                 resolve({
                                     name: `4KHDHub - FSL Server${qualityLabel}`,
@@ -794,7 +796,9 @@ function extractHubCloudLinks(url, referer) {
                                         headers = { Referer: baseUrl + '/', Origin: baseUrl };
                                         console.log('[4KHDHub] Added Referer/Origin headers for r2.dev FSL link (fallback)');
                                     }
-                                } catch {}
+                                } catch {
+                                    // Ignore URL parsing errors
+                                }
 
                                 resolve({
                                     name: `4KHDHub - FSL Server${qualityLabel}`,
@@ -1332,24 +1336,18 @@ function extractStreamingLinks(downloadLinks) {
 
     return Promise.all(promises)
         .then(results => {
-            const validResults = results.filter(result => result !== null);
-            const flatResults = validResults.flat();
-            // Keep .zip links but strip the trailing .zip extension (attempt direct file URL)
-            const transformedResults = flatResults
-                .filter(link => link && link.url)
-                .map(link => {
-                    try {
-                        const lower = link.url.toLowerCase();
-                        if (lower.endsWith('.zip')) {
-                            const newUrl = link.url.slice(0, -4); // remove .zip
-                            console.log(`[4KHDHub] Converted zip URL to non-zip: ${link.url} -> ${newUrl}`);
-                            return { ...link, url: newUrl };
-                        }
-                    } catch {}
-                    return link;
-                });
-            // Note: Link count will be logged after validation completes
-            return transformedResults;
+            const validResults = results.filter(r => r !== null).flat();
+            const filtered = validResults.filter(link => {
+                if (!link || !link.url) return false;
+                const lower = link.url.toLowerCase();
+                if (lower.endsWith('.zip')) {
+                    console.log(`[4KHDHub] Skipping archive (zip) link: ${link.url}`);
+                    return false;
+                }
+                return true;
+            });
+            console.log(`[4KHDHub] Post-processing: kept ${filtered.length}, skipped ${validResults.length - filtered.length} zip archive links`);
+            return filtered;
         });
 }
 
@@ -1841,11 +1839,15 @@ async function get4KHDHubStreams(tmdbId, type, season = null, episode = null) {
                 try {
                     const h = new URL(s.url).hostname;
                     acc[h] = (acc[h] || 0) + 1;
-                } catch {}
+                } catch {
+                    // Ignore URL parsing errors
+                }
                 return acc;
             }, {});
             console.log('[4KHDHub] Final host distribution:', hostCounts);
-        } catch {}
+        } catch {
+            // Ignore URL parsing errors
+        }
 
         console.log(`[4KHDHub] Returning ${streams.length} streams`);
         return streams;

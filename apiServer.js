@@ -3,13 +3,22 @@ const express = require('express');
 const cors = require('cors');
 const os = require('os');
 const { config, saveConfigPatch, OVERRIDE_PATH } = require('./utils/config');
-const { authenticate, issueSession, requireAuth, getSession, updatePassword, AUTH_FILE } = require('./utils/auth');
+const { authenticate, issueSession, requireAuth, getSession, updatePassword } = require('./utils/auth');
 const path = require('path');
 const { listProviders, getProvider, getCookieStats } = require('./providers/registry');
+const { createProxyRoutes, processStreamsForProxy } = require('./proxy/proxyServer');
 const { resolveImdbId } = require('./utils/tmdb');
 const { applyFilters } = require('./utils/streamFilters');
 
 const app = express();
+
+// Conditionally mount proxy routes early so downstream handlers can use them
+if (config.enableProxy) {
+  console.log('[startup] enableProxy flag active: mounting proxy routes');
+  createProxyRoutes(app);
+} else {
+  console.log('[startup] enableProxy flag disabled: proxy routes not mounted');
+}
 
 // --- Simple In-Memory Rate Limiting for /auth/login ---
 const loginAttempts = new Map(); // key: ip, value: { count, first, last, lockedUntil }
@@ -340,6 +349,12 @@ app.get('/api/streams/:type/:tmdbId', async (req,res) => {
     let streams = results.flat();
     streams = applyFilters(streams, 'aggregate', config.minQualities, config.excludeCodecs);
     metrics.streamsReturned += streams.length;
+    if (config.enableProxy) {
+      const serverUrl = `${req.protocol}://${req.get('host')}`;
+      streams = processStreamsForProxy(streams, serverUrl);
+      // Omit original headers when proxying to avoid leaking upstream requirements
+      streams = streams.map(s => { if (s && typeof s === 'object') { const { headers, ...rest } = s; return rest; } return s; });
+    }
     res.json({ success:true, tmdbId, imdbId, count: streams.length, providerTimings, streams });
   } catch (e) {
     metrics.lastError = e.message;
@@ -366,6 +381,11 @@ app.get('/api/streams/:provider/:type/:tmdbId', async (req,res) => {
     const providerTimings = { [prov.name]: Date.now()-t0 };
     streams = applyFilters(streams, prov.name, config.minQualities, config.excludeCodecs);
     metrics.streamsReturned += streams.length;
+    if (config.enableProxy) {
+      const serverUrl = `${req.protocol}://${req.get('host')}`;
+      streams = processStreamsForProxy(streams, serverUrl);
+      streams = streams.map(s => { if (s && typeof s === 'object') { const { headers, ...rest } = s; return rest; } return s; });
+    }
     res.json({ success:true, provider: prov.name, tmdbId, imdbId, count: streams.length, providerTimings, streams });
   } catch (e) {
     metrics.lastError = e.message;

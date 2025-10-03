@@ -1,24 +1,19 @@
 {
   "defaultProviders": [],
   "configVersion": 1,
-  "tmdbApiKeys": [
-    "f3c627493095a7e40ceca68355c94c6d"
-  ],
+  "tmdbApiKeys": [],
   "enableShowboxProvider": true,
-  "febboxCookies": [
-    "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NTc5NjYxMDAsIm5iZiI6MTc1Nzk2NjEwMCwiZXhwIjoxNzg5MDcwMTIwLCJkYXRhIjp7InVpZCI6ODc2NTEwLCJ0b2tlbiI6ImY0MDQxNWJkMTdiYjc1YmQ2ZWQ1NzQ1ZTFhZmNlOTM5In19.vs_pLXAJYhnEaHDfcR_dv9-3us2MJhMOMHUC4la9Rag"
-  ],
-  "enableXprimeProvider": true,
+  "febboxCookies": [],
   "enable4khdhubProvider": true,
   "enableMoviesmodProvider": true,
   "enableMp4hydraProvider": true,
   "enableVidzeeProvider": true,
   "enableVixsrcProvider": true,
-  "disableCache": true,
+  "enableProxy": false,
+  "disableCache": false,
   "enablePStreamApi": true,
   "disableUrlValidation": false,
   "disable4khdhubUrlValidation": false,
   "excludeCodecsRaw": "{\"excludeDV\":false,\"excludeHDR\":false}",
-  "minQualitiesRaw": "all",
-  "port": 8787
+  "minQualitiesRaw": "all"
 }

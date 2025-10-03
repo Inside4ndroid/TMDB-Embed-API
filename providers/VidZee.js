@@ -1,5 +1,43 @@
 const axios = require('axios');
 
+// Confirmed AES-CBC decoder for VidZee encrypted link format.
+// Format (after initial atob in site script): ivBase64:cipherBase64
+// ivBase64 -> CryptoJS Base64 parsed to WordArray (IV)
+// Key: UTF-8 bytes of "qrincywincyspider" padded with nulls to 32 bytes (AES-256-CBC)
+// Cipher: base64 ciphertext, PKCS7 padding, mode CBC.
+let cryptoJs; // lazy load to avoid cost if not needed
+function decodeVidZeeToken(token, debug) {
+    try {
+        if (typeof token !== 'string') return null;
+        if (/^https?:\/\//i.test(token)) return null; // already a URL
+        // Expect pattern base64:base64 (iv:cipher)
+        const raw = Buffer.from(token, 'base64').toString('utf8');
+        if (!raw.includes(':')) return null;
+        const [ivB64, cipherB64] = raw.split(':');
+        if (!ivB64 || !cipherB64) return null;
+        if (!cryptoJs) cryptoJs = require('crypto-js');
+        const iv = cryptoJs.enc.Base64.parse(ivB64.trim());
+        const keyStr = 'qrincywincyspider';
+        // Pad key with nulls to 32 bytes
+        const keyUtf8 = cryptoJs.enc.Utf8.parse(keyStr.padEnd(32, '\0'));
+        const decrypted = cryptoJs.AES.decrypt(cipherB64.trim(), keyUtf8, {
+            iv,
+            mode: cryptoJs.mode.CBC,
+            padding: cryptoJs.pad.Pkcs7
+        }).toString(cryptoJs.enc.Utf8);
+        if (!decrypted) return null;
+        if (!/^https?:\/\//i.test(decrypted)) {
+            if (debug) console.log('[VidZee] decrypted but not a URL', decrypted.slice(0,80));
+            return null;
+        }
+        if (debug) console.log('[VidZee] AES decoded token', { tokenSnippet: token.slice(0, 24)+'...', url: decrypted.slice(0,120) });
+        return decrypted.trim();
+    } catch (e) {
+        if (debug) console.log('[VidZee] AES decode error', e.message);
+        return null;
+    }
+}
+
 // Removed unused parseArgs helper
 
 const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
@@ -73,20 +111,23 @@ const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
             }
 
             const streams = apiSources.map(sourceItem => {
-                // Prefer sourceItem.name as label, fallback to sourceItem.type, then 'VidZee Stream'
                 const label = sourceItem.name || sourceItem.type || 'VidZee';
-                // Ensure quality has 'p' if it's a resolution, or keep it as is
                 let quality = String(label).match(/^\d+$/) ? `${label}p` : label;
-                // Normalize non-numeric or ambiguous quality labels to a baseline so they survive minQuality filter
                 if (!/(\d{3,4})p/.test(quality.toLowerCase())) {
                     quality = '720p';
                 }
                 const language = sourceItem.language || sourceItem.lang;
-                
+                let rawLink = sourceItem.link;
+                const debug = process.env.VIDZEE_DEBUG === '1';
+                const decoded = decodeVidZeeToken(rawLink, debug);
+                if (decoded && /^https?:\/\//i.test(decoded)) {
+                    if (debug) console.log('[VidZee] decoded link', { beforeSample: rawLink.slice(0,40)+'...', after: decoded.slice(0,80) });
+                    rawLink = decoded;
+                }
                 return {
                     name: `VidZee Server${sr} - ${quality} - ${language}`,
                     title: `VidZee Server${sr} - ${quality} - ${language}`,
-                    url: sourceItem.link, // Use sourceItem.link for the URL
+                    url: rawLink,
                     quality: quality,
                     provider: "VidZee",
                     headers: { 

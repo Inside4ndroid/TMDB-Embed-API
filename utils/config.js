@@ -97,7 +97,7 @@ function normalizeConfig(base) {
   // Dynamic provider enable flags
   const providerNames = getProviderNames();
   const boolKeys = providerNames.map(name => `enable${name.charAt(0).toUpperCase() + name.slice(1)}Provider`);
-  boolKeys.push('disableCache', 'enablePStreamApi', 'disableUrlValidation', 'disable4khdhubUrlValidation');
+  boolKeys.push('disableCache', 'enablePStreamApi', 'disableUrlValidation', 'disable4khdhubUrlValidation', 'enableProxy');
   
   boolKeys.forEach(k=>{ if (cfg[k] === 'true') cfg[k] = true; else if (cfg[k] === 'false') cfg[k] = false; });
   
@@ -110,14 +110,10 @@ function normalizeConfig(base) {
   // Default values for other flags
   if (cfg.disableCache === undefined) cfg.disableCache = false;
   if (cfg.enablePStreamApi === undefined) cfg.enablePStreamApi = true;
+  if (cfg.enableProxy === undefined) cfg.enableProxy = false; // default off
   // Proxy features removed; always use direct connections
   if (cfg.disableUrlValidation === undefined) cfg.disableUrlValidation = false;
   if (cfg.disable4khdhubUrlValidation === undefined) cfg.disable4khdhubUrlValidation = false;
-  // MoviesClub optional proxy base (string URL with trailing ?destination= or similar)
-  if (cfg.moviesclubProxy !== undefined && typeof cfg.moviesclubProxy === 'string') {
-    cfg.moviesclubProxy = cfg.moviesclubProxy.trim();
-    if (!cfg.moviesclubProxy) delete cfg.moviesclubProxy;
-  }
   return cfg;
 }
 
@@ -147,18 +143,16 @@ function applyConfigToEnv(cfg){
   process.env.ENABLE_PSTREAM_API = cfg.enablePStreamApi ? 'true':'false';
   process.env.DISABLE_URL_VALIDATION = cfg.disableUrlValidation ? 'true':'false';
   process.env.DISABLE_4KHDHUB_URL_VALIDATION = cfg.disable4khdhubUrlValidation ? 'true':'false';
+  process.env.ENABLE_PROXY = cfg.enableProxy ? 'true':'false';
   // Showbox specific
   if (cfg.showboxCacheDir) process.env.SHOWBOX_CACHE_DIR = cfg.showboxCacheDir; else delete process.env.SHOWBOX_CACHE_DIR;
   // Proxy settings removed; ensure legacy envs are cleared
   delete process.env.SHOWBOX_USE_ROTATING_PROXY;
   delete process.env.SHOWBOX_PROXY_URL_VALUE;
   delete process.env.SHOWBOX_PROXY_URL_ALTERNATE;
-  delete process.env.XPRIME_PROXY_URL;
   delete process.env.VIDZEE_PROXY_URL;
   delete process.env.VIDSRC_PROXY_URL;
   delete process.env.MOVIESMOD_PROXY_URL;
-  // Mirror moviesclub proxy for potential legacy usage
-  if (cfg.moviesclubProxy) process.env.MOVIESCLUB_PROXY_URL = cfg.moviesclubProxy; else delete process.env.MOVIESCLUB_PROXY_URL;
   if (cfg.defaultRegion) process.env.FEBBOX_REGION = cfg.defaultRegion; // alias
 }
 

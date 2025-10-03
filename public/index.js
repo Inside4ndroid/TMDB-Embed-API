@@ -160,12 +160,12 @@ function fillForm(data){
 		tmdbBanner.style.display = (tmdbMissing && tmdbProvidersEnabled)? 'block':'none';
 	}
 	const advBools = [
-		['enableXprimeProvider','adv_enableXprime'],
 		['enable4khdhubProvider','adv_enable4khdhub'],
 		['enableMoviesmodProvider','adv_enableMoviesmod'],
 		['enableMp4hydraProvider','adv_enableMp4hydra'],
 		['enableVidzeeProvider','adv_enableVidzee'],
 		['enableVixsrcProvider','adv_enableVixsrc'],
+		['enableProxy','adv_enableProxy'],
 		['disableCache','adv_disableCache'],
 		['enablePStreamApi','adv_enablePStream'],
 		['disableUrlValidation','adv_disableUrlValidation'],
@@ -174,7 +174,6 @@ function fillForm(data){
 	advBools.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const src = (override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]); if(el.type==='checkbox'){ el.checked = !!src; } else { el.value = src? 'true':''; } });
 	const advTexts = [
 	['showboxCacheDir','adv_showboxCacheDir']
-	,['moviesclubProxy','adv_moviesclubProxy']
 	];
 	advTexts.forEach(([cfgKey, elName])=>{ const el = f.elements[elName]; if(!el) return; const val = override[cfgKey]!==undefined? override[cfgKey] : merged[cfgKey]; el.value = val || ''; });
 	// Sync checkbox style advanced flags
@@ -245,12 +244,12 @@ async function save(){
 		payload.febboxCookies = cookiesVal? cookiesVal.split(',').filter(Boolean) : [];
 	}
 	const boolMap = {
-		adv_enableXprime:'enableXprimeProvider',
 		adv_enable4khdhub:'enable4khdhubProvider',
 		adv_enableMoviesmod:'enableMoviesmodProvider',
 		adv_enableMp4hydra:'enableMp4hydraProvider',
 		adv_enableVidzee:'enableVidzeeProvider',
 		adv_enableVixsrc:'enableVixsrcProvider',
+		adv_enableProxy:'enableProxy',
 		adv_disableCache:'disableCache',
 		adv_enablePStream:'enablePStreamApi',
 		adv_disableUrlValidation:'disableUrlValidation',
@@ -258,7 +257,6 @@ async function save(){
 	};
 	Object.entries(boolMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(el) payload[cfgKey] = !!el.checked; });
 	const textMap = { adv_showboxCacheDir:'showboxCacheDir' };
-	textMap.adv_moviesclubProxy = 'moviesclubProxy';
 	Object.entries(textMap).forEach(([formName,cfgKey])=>{ const el = f.elements[formName]; if(!el) return; const v = el.value.trim(); payload[cfgKey] = v? v : null; });
 	const tmdbHidden = f.elements['tmdbApiKeysHidden'];
 	if (tmdbHidden){
@@ -339,12 +337,12 @@ async function clearAll(){
 		tmdbApiKey: null,
 		// Provider enable flags default to true
 		enableShowboxProvider: true,
-		enableXprimeProvider: true,
 		enable4khdhubProvider: true,
 		enableMoviesmodProvider: true,
 		enableMp4hydraProvider: true,
 		enableVidzeeProvider: true,
 		enableVixsrcProvider: true,
+		enableProxy: false,
 		// Other defaults
 		disableCache: false,
 		enablePStreamApi: true,

@@ -13,9 +13,7 @@ const providerFunctionMap = {
   'MP4Hydra.js': 'getMP4HydraStreams',
   'VidZee.js': 'getVidZeeStreams',
   'vixsrc.js': 'getVixsrcStreams',
-  'xprime.js': 'getXprimeStreams',
   'uhdmovies.js': 'getUHDMoviesStreams',
-  'moviesclub.js': 'getMoviesClubStreams',
 };
 
 // Stats for debug endpoint
@@ -92,46 +90,6 @@ function createFetchFunction(providerInfo) {
           lastCookieStats.remainingMB = global.currentRequestUserCookieRemainingMB;
         }
         global.currentRequestConfig = previousConfig || {};
-      } else if (providerInfo.name === 'xprime') {
-        // Special case for Xprime with TMDB metadata lookup
-        const { getTmdbApiKey } = require('../utils/tmdbKey');
-        const tmdbApiKey = getTmdbApiKey();
-        if (!tmdbApiKey) {
-          console.warn('[registry] xprime skipped: TMDB API key missing');
-          return [];
-        }
-        // Fetch minimal TMDB metadata for title + year
-        let title = null; let year = null;
-        try {
-          const axios = require('axios');
-          const metaUrl = `https://api.themoviedb.org/3/${mediaType}/${ctx.tmdbId}?api_key=${tmdbApiKey}`;
-          const { data: meta } = await axios.get(metaUrl, { timeout: 8000 });
-          title = mediaType === 'movie' ? (meta.title || meta.original_title) : (meta.name || meta.original_name);
-          const dateStr = mediaType === 'movie' ? meta.release_date : meta.first_air_date;
-          if (dateStr) year = dateStr.split('-')[0];
-        } catch (mErr) {
-          console.warn('[registry] xprime metadata fetch failed:', mErr.message);
-          return [];
-        }
-        if (!title || !year) {
-          console.log('[registry] xprime missing title/year after TMDB lookup');
-          return [];
-        }
-        result = await module[funcName](title, year, mediaType, ctx.season || null, ctx.episode || null);
-        // Normalize quality labels
-        if (Array.isArray(result)) {
-          result = result.map(s => {
-            let q = s.quality || 'Unknown';
-            if (!/(\d{3,4})p/.test(q.toLowerCase())) {
-              const qLower = q.toLowerCase();
-              if (qLower.includes('fhd') || qLower.includes('full')) q = '1080p';
-              else if (qLower === 'hd' || qLower.includes('720')) q = '720p';
-              else if (qLower.includes('sd') || qLower.includes('480')) q = '480p';
-              else if (qLower.includes('cam')) q = '360p';
-            }
-            return { ...s, quality: q, name: s.name || 'Xprime', provider: 'xprime' };
-          });
-        }
       } else {
         // Standard provider call
         result = await module[funcName](ctx.tmdbId, mediaType, ctx.season || null, ctx.episode || null);

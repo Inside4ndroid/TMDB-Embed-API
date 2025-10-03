@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.8] - 2025-10-03
+
+### Added
+- Added `processStreamsForProxy` so the aggregate and provider-specific endpoints automatically rewrite stream URLs through the internal `/m3u8-proxy`/`/ts-proxy` layer whenever `enableProxy` is turned on, stripping provider headers safely.
+
+### Changed
+- Showbox provider overhaul: filesystem-only caching (Redis removed), smarter FebBox cookie selection with region fallbacks, TMDB title/image validation that recognises romanized names, plus cached HEAD size lookups for faster listings.
+- Vixsrc provider rewritten to parse the `window.masterPlaylist` payload (token + expiry), returning a single master playlist with English subtitle lookup and correct Referer headers.
+- Config loader now prefers `utils/user-config.json`, dedupes TMDB keys, defaults provider enable flags to `true`, and scrubs legacy proxy env values when mirroring overrides back to `process.env`.
+- 4KHDHub provider permanently drops `.zip` archive links instead of trimming extensions and improves host distribution logging.
+- Provider registry dynamically enumerates available modules (removing MoviesClub/Xprime remnants) while keeping per-request cookie stats for the admin debug panel.
+
+### Removed
+- Deleted legacy `providers/moviesclub.js`, `providers/xprime.js`, and other unused proxy/auth remnants that were no longer referenced.
+
+### Fixed
+- Aggregated responses now obey the proxy flag without client changes—streams returned from `/api/streams/...` are proxy-wrapped and omit upstream header hints when `enableProxy` is active.
+
 ## [1.0.7] - 2025-09-21
 
 ### Added
@@ -132,6 +150,7 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] - 2025-09-16
 - Initial stable release.
 
+[1.0.8]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/Inside4ndroid/TMDB-Embed-API/compare/v1.0.4...v1.0.5
