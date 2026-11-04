@@ -22,6 +22,56 @@ const providerFunctionMap = {
   'zxcstreams.js': 'getZxcstreamsStreams',
 };
 
+
+// ---------------------------------------------------------------------------
+// Stream normalization: har provider alag shape deta tha (type/resolution gayab),
+// isliye player HLS ko MP4 samajh leta tha. Ab sab streams ek format me aate hain.
+// ---------------------------------------------------------------------------
+const PROVIDER_TYPE_HINT = { vaplayer: 'hls', vixsrc: 'hls' }; // ye hamesha HLS dete hain
+const KNOWN_HEIGHTS = [240, 360, 480, 540, 576, 720, 1080, 1440, 2160];
+
+function detectType(url, hint) {
+  if (hint === 'hls' || hint === 'mp4') return hint;
+  const u = String(url).toLowerCase();
+  if (u.includes('m3u8')) return 'hls';
+  if (/\.(mp4|m4v|webm|mkv|avi)(\?|#|&|$)/.test(u)) return 'mp4';
+  return undefined; // pata nahi: player content dekh ke khud pehchanega
+}
+
+function parseHeight(...texts) {
+  for (const t of texts) {
+    if (t == null) continue;
+    const str = String(t).trim();
+    const m = /(\d{3,4})\s*p\b/i.exec(str) || /^(\d{3,4})$/.exec(str);
+    if (m && KNOWN_HEIGHTS.includes(Number(m[1]))) return Number(m[1]);
+    if (/\b(4k|uhd)\b/i.test(str)) return 2160;
+  }
+  return null;
+}
+
+function normalizeStream(raw, providerName) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.url !== 'string' || !/^https?:\/\//i.test(raw.url)) return null;
+  const out = { ...raw, provider: raw.provider || providerName };
+
+  const declared = typeof raw.type === 'string' ? raw.type.toLowerCase() : '';
+  const type = detectType(raw.url, declared === 'hls' || declared === 'mp4' ? declared : undefined)
+    || PROVIDER_TYPE_HINT[providerName];
+  if (type) out.type = type; else delete out.type;
+
+  if (/\.mkv(\?|#|&|$)/i.test(raw.url)) out.container = 'mkv'; // Chrome me aksar nahi chalta (HEVC/AC3)
+
+  const given = Number(raw.resolution);
+  if (given > 0) out.resolution = given;
+  else {
+    const h = parseHeight(raw.resolution, raw.quality, raw.name, raw.title);
+    if (h) out.resolution = h; else delete out.resolution;
+  }
+
+  if (!out.headers || typeof out.headers !== 'object' || Array.isArray(out.headers)) out.headers = {};
+  return out;
+}
+
 // Stats for debug endpoint
 let lastCookieStats = { selected: null, index: null, total: 0, remainingMB: null, timestamp: null };
 
@@ -106,8 +156,8 @@ function createFetchFunction(providerInfo) {
 
       if (!Array.isArray(result)) return [];
 
-      // Add provider name if not present
-      return result.map(s => ({ ...s, provider: s.provider || providerInfo.name }));
+      // Provider name + type/resolution/headers normalize
+      return result.map(s => normalizeStream(s, providerInfo.name)).filter(Boolean);
 
     } catch (e) {
       console.error(`[registry] ${providerInfo.name} fetch error:`, e.message);
@@ -142,4 +192,4 @@ function getProvider(name) {
 
 function getCookieStats() { return lastCookieStats; }
 
-module.exports = { listProviders, getProvider, getCookieStats };
+module.exports = { listProviders, getProvider, getCookieStats, normalizeStream };
