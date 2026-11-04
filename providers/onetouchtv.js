@@ -309,9 +309,11 @@ async function getOnetouchtvStreams(tmdbId, mediaType = 'movie', seasonNum = nul
                 url: src.url,
                 quality,
                 provider: 'OneTouchTV',
+                // CDN ko site ka Referer/Origin + real UA chahiye (pehle api3.devcorp.me tha -> HTTP 403)
                 headers: {
-                    'User-Agent': 'Mozilla/5.0',
-                    'Referer': `${MAIN_URL}/`
+                    'User-Agent': FETCH_HEADERS['User-Agent'],
+                    'Referer': 'https://onetouchtv.xyz/',
+                    'Origin': 'https://onetouchtv.xyz'
                 },
                 ...(subtitles.length ? { subtitles } : {})
             });
