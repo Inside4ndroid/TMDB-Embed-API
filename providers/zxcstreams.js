@@ -288,6 +288,7 @@ async function getZxcstreamsStreams(tmdbId, mediaType = 'movie', seasonNum = nul
                 name: `ZXCStreams ${serverName} ${label}`,
                 title: titleLine,
                 url: l.url,
+                type: l.type === 'hls' ? 'hls' : 'mp4',
                 quality: label,
                 provider: 'ZXCStreams',
                 headers: {

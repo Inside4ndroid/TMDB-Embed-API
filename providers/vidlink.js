@@ -22,7 +22,6 @@ async function getVidlinkStreams(tmdbId, mediaType = 'movie', seasonNum = null, 
     console.log(`[Vidlink] Fetching streams for TMDB ID: ${tmdbId}, Type: ${mediaType}`);
 
     try {
-        // Step 1: Encrypt the TMDB ID via enc-dec.app
         const encRes = await axios.get(
             `https://enc-dec.app/api/enc-vidlink?text=${encodeURIComponent(String(tmdbId))}`,
             { timeout: 8000 }
@@ -33,7 +32,6 @@ async function getVidlinkStreams(tmdbId, mediaType = 'movie', seasonNum = null, 
             return [];
         }
 
-        // Step 2: Fetch file-quality streams from Vidlink API
         const apiUrl = mediaType === 'tv'
             ? `https://vidlink.pro/api/b/tv/${encodedTmdb}/${seasonNum}/${episodeNum}?multiLang=0`
             : `https://vidlink.pro/api/b/movie/${encodedTmdb}?multiLang=0`;
