@@ -9,6 +9,7 @@ const { listProviders, getProvider, getCookieStats } = require('./providers/regi
 const { createProxyRoutes, processStreamsForProxy } = require('./proxy/proxyServer');
 const { resolveImdbId } = require('./utils/tmdb');
 const { applyFilters } = require('./utils/streamFilters');
+const { aggregate, withTimeout } = require('./utils/aggregate');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -192,7 +193,7 @@ app.use((req,res,next)=>{ metrics.requestsTotal++; metrics.lastRequestAt = Date.
 app.use(express.static(path.join(process.cwd(),'public')));
 
 // Config API
-app.get('/api/config', (req,res) => {
+app.get('/api/config', requireAuth, (req,res) => {
   const fs = require('fs');
   let override = {};
   try { if (fs.existsSync(OVERRIDE_PATH)) override = JSON.parse(fs.readFileSync(OVERRIDE_PATH,'utf8')); } catch (e) {
@@ -200,7 +201,7 @@ app.get('/api/config', (req,res) => {
   }
   res.json({ success:true, merged: config, override, overridePath: OVERRIDE_PATH });
 });
-app.post('/api/config', (req,res) => {
+app.post('/api/config', requireAuth, (req,res) => {
   const patch = req.body || {};
   if (patch.port) {
     const p = Number(patch.port); if (!Number.isFinite(p) || p<=0 || p>65535) return res.status(400).json({ success:false, error:'INVALID_PORT'});
@@ -318,37 +319,46 @@ app.get('/api/providers/:name', (req,res) => {
   res.json({ success:true, provider:{ name: p.name, enabled: p.enabled } });
 });
 
+// Per-provider hard timeout (ms). Slow providers background me chalte rehte hain,
+// fast providers ka result turant ja jaata hai (partial=true + pending list).
+const PROVIDER_HARD_MS = { '4khdhub': 55000, netmirror: 45000, showbox: 40000, zxcstreams: 35000, onetouchtv: 35000, castletv: 35000 };
+const DEFAULT_HARD_MS = Number(process.env.PROVIDER_TIMEOUT_MS) || 25000;
+const hardMsFor = (name) => PROVIDER_HARD_MS[name] || DEFAULT_HARD_MS;
+
 // Aggregate streams across all enabled providers
+//   ?wait=ms     kitni der tak wait (default 12000, 0 = abhi jo ready hai wahi)
+//   ?refresh=1   cache ignore karke dobara scrape
 app.get('/api/streams/:type/:tmdbId', async (req,res) => {
   const { type, tmdbId } = req.params;
   if (!['movie','series'].includes(type)) return res.status(400).json({ success:false, error:'INVALID_TYPE' });
   const season = req.query.season ? Number(req.query.season) : null;
   const episode = req.query.episode ? Number(req.query.episode) : null;
+  const softMs = req.query.wait === undefined ? 12000 : Math.min(40000, Math.max(0, Number(req.query.wait) || 0));
   try {
     metrics.streamRequests++;
     const tmdbType = type === 'movie' ? 'movie' : 'tv';
     const imdbId = await resolveImdbId(tmdbType, tmdbId); if (imdbId) metrics.tmdbToImdbLookups++;
-    const selectedProviders = (config.defaultProviders.length ? config.defaultProviders : listProviders().map(p=>p.name));
-    const providerTimings = {};
-    const results = await Promise.all(selectedProviders.map(async name => {
-      const prov = getProvider(name);
-      if (!prov || !prov.enabled) return [];
-      metrics.providerCalls[name] = (metrics.providerCalls[name]||0)+1;
-      try {
+    const selectedProviders = (config.defaultProviders.length ? config.defaultProviders : listProviders().map(p=>p.name))
+      .filter(name => { const p = getProvider(name); return p && p.enabled; });
+    const key = `${type}:${tmdbId}:${season || 0}:${episode || 0}:${selectedProviders.join(',')}`;
+
+    const snap = await aggregate({
+      key,
+      names: selectedProviders,
+      softMs,
+      hardMs: hardMsFor,
+      force: req.query.refresh === '1',
+      runOne: async (name) => {
+        const prov = getProvider(name);
+        metrics.providerCalls[name] = (metrics.providerCalls[name]||0)+1;
         console.log(`[api] invoking provider ${name} for tmdbId=${tmdbId}`);
-        const t0 = Date.now();
         const r = await prov.fetch({ tmdbId, type, season, episode, imdbId, filters:{ } });
-        providerTimings[name] = Date.now()-t0;
         console.log(`[api] provider ${name} returned ${Array.isArray(r)?r.length:0} streams`);
         return r;
-      } catch (e) {
-        console.error(`[api] provider ${name} failed:`, e.message);
-        providerTimings[name] = null;
-        return [];
       }
-    }));
-    let streams = results.flat();
-    streams = applyFilters(streams, 'aggregate', config.minQualities, config.excludeCodecs);
+    });
+
+    let streams = applyFilters(snap.streams, 'aggregate', config.minQualities, config.excludeCodecs);
     metrics.streamsReturned += streams.length;
     if (config.enableProxy) {
       const serverUrl = `${req.protocol}://${req.get('host')}`;
@@ -356,10 +366,59 @@ app.get('/api/streams/:type/:tmdbId', async (req,res) => {
       // Omit original headers when proxying to avoid leaking upstream requirements
       streams = streams.map(s => { if (s && typeof s === 'object') { const { headers, ...rest } = s; return rest; } return s; });
     }
-    res.json({ success:true, tmdbId, imdbId, count: streams.length, providerTimings, streams });
+    res.json({
+      success:true, tmdbId, imdbId, count: streams.length,
+      partial: snap.partial, pending: snap.pending,
+      providerTimings: snap.timings, providerErrors: snap.errors,
+      streams
+    });
   } catch (e) {
     metrics.lastError = e.message;
     res.status(500).json({ success:false, error:'INTERNAL_ERROR', message:e.message });
+  }
+});
+
+// Self-test: har enabled provider ko ek baar chala ke batata hai kaun chal raha hai (count, time, type, sample host)
+//   /api/selftest?id=278            movie
+//   /api/selftest?type=series&id=1396&season=1&episode=1
+//   /api/selftest?id=278&provider=vidlink
+app.get('/api/selftest', async (req,res) => {
+  try {
+    const type = req.query.type === 'series' ? 'series' : 'movie';
+    const tmdbId = String(req.query.id || config.providerCheckTmdbId || '278');
+    const season = req.query.season ? Number(req.query.season) : null;
+    const episode = req.query.episode ? Number(req.query.episode) : null;
+    const tmdbType = type === 'movie' ? 'movie' : 'tv';
+    const imdbId = await resolveImdbId(tmdbType, tmdbId);
+    const names = req.query.provider
+      ? [String(req.query.provider).toLowerCase()]
+      : listProviders().filter(p => p.enabled).map(p => p.name);
+    const rows = await Promise.all(names.map(async (name) => {
+      const prov = getProvider(name);
+      if (!prov) return { provider: name, ok:false, count:0, error:'PROVIDER_NOT_FOUND' };
+      const t0 = Date.now();
+      try {
+        const r = await withTimeout(prov.fetch({ tmdbId, type, season, episode, imdbId, filters:{} }), hardMsFor(name), name);
+        const list = Array.isArray(r) ? r : [];
+        const byType = {};
+        list.forEach(s => { const k = s.container === 'mkv' ? 'mkv' : (s.type || 'unknown'); byType[k] = (byType[k]||0)+1; });
+        let sample = null;
+        if (list[0]) { try { sample = { host: new URL(list[0].url).hostname, type: list[0].type || null, resolution: list[0].resolution || null, hasHeaders: Object.keys(list[0].headers || {}).length > 0 }; } catch { sample = null; } }
+        return { provider: name, ok: list.length > 0, count: list.length, ms: Date.now()-t0, byType, sample };
+      } catch (e) {
+        return { provider: name, ok:false, count:0, ms: Date.now()-t0, error: e.message };
+      }
+    }));
+    const working = rows.filter(r=>r.ok).length;
+    // ?format=text -> phone par padhne layak: har provider ki ek line
+    if (req.query.format === 'text') {
+      const lines = rows.map(r => `${r.ok ? 'OK  ' : 'FAIL'} ${String(r.provider).padEnd(13)} streams=${String(r.count).padEnd(3)} ${String(r.ms ?? '-').padStart(6)}ms  ${r.error ? 'err: ' + r.error : (r.sample ? r.sample.host + ' ' + JSON.stringify(r.byType) : 'koi stream nahi mili')}`);
+      res.type('text/plain').send(`tmdb=${tmdbId} type=${type} imdb=${imdbId || '-'}  working ${working}/${rows.length}\n\n` + lines.join('\n'));
+      return;
+    }
+    res.json({ success:true, tmdbId, type, imdbId, working, total: rows.length, providers: rows });
+  } catch (e) {
+    res.status(500).json({ success:false, error:'SELFTEST_FAILED', message:e.message });
   }
 });
 
